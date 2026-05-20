@@ -1,0 +1,1 @@
+# Proyecto-Ing.SoftwareMARJUL2026-Equipo-7
