@@ -12,7 +12,20 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import { apiFetch } from './api'
 
+export const crearSolicitudApi = async (solicitud) => {
+  return await apiFetch(`/intercambio/solicitudes`, {
+    method: 'POST',
+    body: JSON.stringify(solicitud)
+  })
+}
+
+export const listarSolicitudesApi = async () => {
+  return await apiFetch(`/intercambio/solicitudes`, {
+    method: 'GET'
+  })
+}
 /**
  * Servicio para manejar la lógica de negocio de las solicitudes.
  */
