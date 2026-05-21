@@ -1,81 +1,52 @@
 package com.cuidared.models;
 
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.util.UUID;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import java.time.LocalDateTime;
 
-/**
- * Clase que representa un Horario en CuidaRed.
- * Contiene lógica para redondear bloques a 30 minutos y manejar la zona horaria America/Caracas.
- */
 public class Horario {
 
-    private String id;
-    private ZonedDateTime fechaInicio;
-    private ZonedDateTime fechaFin;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime fechaInicio;
 
-    private static final ZoneId ZONA_CARACAS = ZoneId.of("America/Caracas");
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime fechaFin;
 
     public Horario() {
-        this.id = UUID.randomUUID().toString();
     }
 
-    public Horario(ZonedDateTime fechaInicio, ZonedDateTime fechaFin) {
-        this.id = UUID.randomUUID().toString();
-        this.fechaInicio = redondearA30Minutos(fechaInicio.withZoneSameInstant(ZONA_CARACAS));
-        this.fechaFin = redondearA30Minutos(fechaFin.withZoneSameInstant(ZONA_CARACAS));
+    public Horario(LocalDateTime fechaInicio, LocalDateTime fechaFin) {
+        this.fechaInicio = fechaInicio;
+        this.fechaFin = fechaFin;
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public ZonedDateTime getFechaInicio() {
+    public LocalDateTime getFechaInicio() {
         return fechaInicio;
     }
 
-    public void setFechaInicio(ZonedDateTime fechaInicio) {
-        this.fechaInicio = redondearA30Minutos(fechaInicio.withZoneSameInstant(ZONA_CARACAS));
+    public void setFechaInicio(LocalDateTime fechaInicio) {
+        this.fechaInicio = fechaInicio;
     }
 
-    public ZonedDateTime getFechaFin() {
+    public LocalDateTime getFechaFin() {
         return fechaFin;
     }
 
-    public void setFechaFin(ZonedDateTime fechaFin) {
-        this.fechaFin = redondearA30Minutos(fechaFin.withZoneSameInstant(ZONA_CARACAS));
+    public void setFechaFin(LocalDateTime fechaFin) {
+        this.fechaFin = fechaFin;
     }
 
-    /**
-     * Redondea un ZonedDateTime al bloque de 30 minutos más cercano o siguiente.
-     * @param zdt ZonedDateTime a redondear
-     * @return ZonedDateTime redondeado
-     */
-    private ZonedDateTime redondearA30Minutos(ZonedDateTime zdt) {
-        if (zdt == null) return null;
-        int minuto = zdt.getMinute();
-        if (minuto == 0 || minuto == 30) {
-            return zdt.withSecond(0).withNano(0);
-        } else if (minuto < 30) {
-            return zdt.withMinute(30).withSecond(0).withNano(0);
-        } else {
-            return zdt.plusHours(1).withMinute(0).withSecond(0).withNano(0);
-        }
-    }
-
-    /**
-     * Verifica si este horario se solapa con otro horario.
-     * @param otro Horario a comparar
-     * @return true si hay solapamiento
-     */
     public boolean seSolapaCon(Horario otro) {
-        if (otro == null || this.fechaInicio == null || this.fechaFin == null || otro.fechaInicio == null || otro.fechaFin == null) {
+        if (
+                this.fechaInicio == null ||
+                this.fechaFin == null ||
+                otro == null ||
+                otro.getFechaInicio() == null ||
+                otro.getFechaFin() == null
+        ) {
             return false;
         }
-        return this.fechaInicio.isBefore(otro.fechaFin) && this.fechaFin.isAfter(otro.fechaInicio);
+
+        return this.fechaInicio.isBefore(otro.getFechaFin())
+                && this.fechaFin.isAfter(otro.getFechaInicio());
     }
 }

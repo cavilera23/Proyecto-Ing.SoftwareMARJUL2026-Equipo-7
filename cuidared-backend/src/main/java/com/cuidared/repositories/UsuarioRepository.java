@@ -7,13 +7,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
 /**
- * Repositorio para la gestión de persistencia de Usuarios (Padres y Cuidadores) en formato JSON.
+ * Repositorio para la gestión de persistencia de Usuarios en formato JSON.
  */
 @Repository
 public class UsuarioRepository extends JsonRepository<Usuario> {
 
     @Autowired
-    public UsuarioRepository(@Value("${cuidared.data.usuarios:data/usuarios.json}") String filePath, ObjectMapper objectMapper) {
+    public UsuarioRepository(
+            @Value("${cuidared.data.usuarios:data/usuarios.json}") String filePath,
+            ObjectMapper objectMapper
+    ) {
         super(filePath, objectMapper, Usuario.class);
     }
 

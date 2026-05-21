@@ -1,37 +1,33 @@
 package com.cuidared.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import java.util.UUID;
 
-/**
- * Clase abstracta que representa a un usuario genérico en el sistema CuidaRed.
- * Se utiliza herencia para distinguir entre Padres y Cuidadores.
- * Jackson se configura para manejar el polimorfismo en la serialización/deserialización.
- */
+@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonTypeInfo(
-    use = JsonTypeInfo.Id.NAME, 
-    include = JsonTypeInfo.As.PROPERTY, 
-    property = "tipoUsuario",
-    defaultImpl = Padre.class // <-- ESTA ES LA LÍNEA MÁGICA
+        use = JsonTypeInfo.Id.NAME,
+        include = JsonTypeInfo.As.EXISTING_PROPERTY,
+        property = "tipoUsuario",
+        visible = true
 )
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = Padre.class, name = "PADRE"),
-    @JsonSubTypes.Type(value = Cuidador.class, name = "CUIDADOR")
+        @JsonSubTypes.Type(value = Padre.class, name = "PADRE"),
+        @JsonSubTypes.Type(value = Cuidador.class, name = "CUIDADOR")
 })
 public abstract class Usuario {
-    
+
+    private String tipoUsuario;
     private String id;
     private String nombre;
     private String correo;
     private String telefono;
     private double calificacionPromedio;
 
-    /**
-     * Constructor por defecto requerido por Jackson.
-     */
     public Usuario() {
         this.id = UUID.randomUUID().toString();
+        this.calificacionPromedio = 0.0;
     }
 
     public Usuario(String nombre, String correo, String telefono) {
@@ -40,6 +36,14 @@ public abstract class Usuario {
         this.correo = correo;
         this.telefono = telefono;
         this.calificacionPromedio = 0.0;
+    }
+
+    public String getTipoUsuario() {
+        return tipoUsuario;
+    }
+
+    public void setTipoUsuario(String tipoUsuario) {
+        this.tipoUsuario = tipoUsuario;
     }
 
     public String getId() {

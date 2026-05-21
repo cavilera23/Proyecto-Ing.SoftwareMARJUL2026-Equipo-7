@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
  */
 @ResponseStatus(HttpStatus.CONFLICT)
 public class SolapamientoHorarioException extends RuntimeException {
+
     public SolapamientoHorarioException(String message) {
         super(message);
     }

@@ -16,23 +16,35 @@ public class Padre extends Usuario {
 
     public Padre() {
         super();
+        this.setTipoUsuario("PADRE");
         this.solicitudesIds = new ArrayList<>();
     }
 
     public Padre(String nombre, String correo, String telefono) {
         super(nombre, correo, telefono);
+        this.setTipoUsuario("PADRE");
         this.solicitudesIds = new ArrayList<>();
     }
 
     public List<String> getSolicitudesIds() {
+        if (this.solicitudesIds == null) {
+            this.solicitudesIds = new ArrayList<>();
+        }
         return solicitudesIds;
     }
 
     public void setSolicitudesIds(List<String> solicitudesIds) {
-        this.solicitudesIds = solicitudesIds;
+        if (solicitudesIds == null) {
+            this.solicitudesIds = new ArrayList<>();
+        } else {
+            this.solicitudesIds = solicitudesIds;
+        }
     }
 
     public void addSolicitudId(String solicitudId) {
+        if (this.solicitudesIds == null) {
+            this.solicitudesIds = new ArrayList<>();
+        }
         this.solicitudesIds.add(solicitudId);
     }
 }
