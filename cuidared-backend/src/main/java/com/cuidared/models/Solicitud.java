@@ -5,6 +5,10 @@ import java.util.UUID;
 /**
  * Clase que representa una Solicitud de cuidado en CuidaRed.
  */
+
+private LocalDate fecha;
+private LocalTime horaInicio;
+private int duracionHoras; // 1-12 horas
 public class Solicitud {
 
     private String id;
@@ -14,7 +18,7 @@ public class Solicitud {
     private TipoAsistencia tipo;
     private Horario horario;
     private String descripcion;
-
+    
     public Solicitud() {
         this.id = UUID.randomUUID().toString();
         this.estado = EstadoSolicitud.PENDIENTE;
