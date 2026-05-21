@@ -12,7 +12,8 @@ import java.util.UUID;
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME, 
     include = JsonTypeInfo.As.PROPERTY, 
-    property = "tipoUsuario"
+    property = "tipoUsuario",
+    defaultImpl = Padre.class // <-- ESTA ES LA LÍNEA MÁGICA
 )
 @JsonSubTypes({
     @JsonSubTypes.Type(value = Padre.class, name = "PADRE"),

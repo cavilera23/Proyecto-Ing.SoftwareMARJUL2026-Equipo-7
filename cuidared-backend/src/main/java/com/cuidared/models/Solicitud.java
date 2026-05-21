@@ -3,25 +3,6 @@ package com.cuidared.models;
 import java.util.UUID;
 
 /**
- * Enumeración que representa el estado de una solicitud.
- */
-enum EstadoSolicitud {
-    PENDIENTE,
-    ACEPTADA,
-    FINALIZADA,
-    CANCELADA
-}
-
-/**
- * Enumeración que representa el tipo de asistencia requerida.
- */
-enum TipoAsistencia {
-    NINO,
-    ADULTO_MAYOR,
-    MASCOTA
-}
-
-/**
  * Clase que representa una Solicitud de cuidado en CuidaRed.
  */
 public class Solicitud {
