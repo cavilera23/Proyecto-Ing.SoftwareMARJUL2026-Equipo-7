@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import com.cuidared.exceptions.ReglaNegocioException;
 import com.cuidared.exceptions.SolapamientoHorarioException;
+
 /**
  * Controlador REST para la gestión de intercambios (solicitudes de cuidado).
  */
@@ -25,22 +26,27 @@ public class IntercambioController {
         this.solicitudService = solicitudService;
     }
 
-   @PostMapping("/solicitudes")
-public ResponseEntity<?> crearSolicitud(@RequestBody Solicitud solicitud) {
-    try {
-        Solicitud nueva = solicitudService.crearSolicitud(solicitud);
-        return new ResponseEntity<>(nueva, HttpStatus.CREATED);
-    } catch (ReglaNegocioException e) {
-        return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-    } catch (SolapamientoHorarioException e) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-            .body(Map.of("error", e.getMessage(), "solicitudExistenteId", ""));
+    @PostMapping("/solicitudes")
+    public ResponseEntity<?> crearSolicitud(@RequestBody Solicitud solicitud) {
+        try {
+            Solicitud nueva = solicitudService.crearSolicitud(solicitud);
+            return new ResponseEntity<>(nueva, HttpStatus.CREATED);
+        } catch (ReglaNegocioException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (SolapamientoHorarioException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("error", e.getMessage(), "solicitudExistenteId", ""));
+        }
     }
-}
 
     @GetMapping("/solicitudes")
     public ResponseEntity<List<Solicitud>> listarSolicitudes() {
         return ResponseEntity.ok(solicitudService.obtenerTodas());
     }
-}
 
+    // --- LÓGICA DE JESÚS RECUPERADA (Historial y Calificaciones) ---
+    @GetMapping("/solicitudes/padre/{padreId}")
+    public ResponseEntity<Map<String, List<Solicitud>>> obtenerHistorialYFuturas(@PathVariable String padreId) {
+        return ResponseEntity.ok(solicitudService.obtenerHistorialYFuturasPorPadre(padreId));
+    }
+}
