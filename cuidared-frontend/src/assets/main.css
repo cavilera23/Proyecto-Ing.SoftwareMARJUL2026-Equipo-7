@@ -1,0 +1,54 @@
+@import "./base.css";
+
+/* Sobreescribimos las variables base con tu paleta oscura de la maqueta */
+:root {
+  --color-background: #0f172a; /* Fondo oscuro profundo (Slate 900) */
+  --color-background-soft: #1e293b; /* Fondo de tarjetas/navbar (Slate 800) */
+  --color-background-mute: #020617; /* Fondo del footer (Slate 950) */
+
+  --color-border: #334155; /* Bordes sutiles (Slate 700) */
+  --color-text: #94a3b8; /* Texto secundario/grisáceo (Slate 400) */
+  --color-heading: #f8fafc; /* Texto principal/blanco (Slate 50) */
+
+  --color-primary: #10b981; /* Verde Esmeralda para botones principales y acentos */
+  --color-primary-hover: #059669; /* Verde más oscuro para hover */
+}
+
+/* Reseteo Global y Comportamiento Responsivo */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* Eliminamos las restricciones de centrado que rompen el ancho completo */
+#app {
+  width: 100%;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: block !important;
+}
+
+/* Estilos de enlaces generales */
+a {
+  text-decoration: none;
+  color: var(--color-primary);
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: var(--color-primary-hover);
+}
