@@ -102,4 +102,52 @@ public class SolicitudService {
     public List<Solicitud> obtenerTodas() {
         return solicitudRepository.findAll();
     }
+
+    /**
+     * Obtiene todas las solicitudes de un padre y las separa en historial y programación futura.
+     * @param padreId ID del padre
+     * @return Mapa con dos listas: "historial" y "futuras"
+     */
+    public java.util.Map<String, List<Solicitud>> obtenerHistorialYFuturasPorPadre(String padreId) {
+        List<Solicitud> todas = solicitudRepository.findAll();
+        
+        List<Solicitud> delPadre = todas.stream()
+                .filter(s -> s.getPadreId().equals(padreId))
+                .collect(java.util.stream.Collectors.toList());
+
+        List<Solicitud> historial = new java.util.ArrayList<>();
+        List<Solicitud> futuras = new java.util.ArrayList<>();
+
+        java.time.LocalDate hoy = java.time.LocalDate.now();
+        java.time.LocalTime ahora = java.time.LocalTime.now();
+
+        for (Solicitud s : delPadre) {
+            boolean esPasada = false;
+            
+            // Si tiene estado FINALIZADA o CANCELADA, siempre va al historial
+            if (s.getEstado() == EstadoSolicitud.FINALIZADA || s.getEstado() == EstadoSolicitud.CANCELADA) {
+                esPasada = true;
+            } else if (s.getFecha() != null) {
+                // Verificar si la fecha ya pasó
+                if (s.getFecha().isBefore(hoy)) {
+                    esPasada = true;
+                } else if (s.getFecha().isEqual(hoy) && s.getHoraInicio() != null && s.getHoraInicio().isBefore(ahora)) {
+                    // Si es hoy, verificar si la hora ya pasó
+                    esPasada = true;
+                }
+            }
+
+            if (esPasada) {
+                historial.add(s);
+            } else {
+                futuras.add(s);
+            }
+        }
+
+        java.util.Map<String, List<Solicitud>> resultado = new java.util.HashMap<>();
+        resultado.put("historial", historial);
+        resultado.put("futuras", futuras);
+        
+        return resultado;
+    }
 }

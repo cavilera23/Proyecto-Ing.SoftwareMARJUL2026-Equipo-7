@@ -42,5 +42,9 @@ public ResponseEntity<?> crearSolicitud(@RequestBody Solicitud solicitud) {
     public ResponseEntity<List<Solicitud>> listarSolicitudes() {
         return ResponseEntity.ok(solicitudService.obtenerTodas());
     }
-}
 
+    @GetMapping("/solicitudes/padre/{padreId}")
+    public ResponseEntity<Map<String, List<Solicitud>>> obtenerHistorialYFuturas(@PathVariable String padreId) {
+        return ResponseEntity.ok(solicitudService.obtenerHistorialYFuturasPorPadre(padreId));
+    }
+}
