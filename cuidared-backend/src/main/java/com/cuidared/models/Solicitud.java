@@ -1,15 +1,17 @@
 package com.cuidared.models;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.UUID;
 
 /**
  * Clase que representa una Solicitud de cuidado en CuidaRed.
  */
-
-private LocalDate fecha;
-private LocalTime horaInicio;
-private int duracionHoras; // 1-12 horas
 public class Solicitud {
+
+    private LocalDate fecha;
+    private LocalTime horaInicio;
+    private int duracionHoras; // 1-12 horas
 
     private String id;
     private String padreId;
@@ -87,5 +89,29 @@ public class Solicitud {
 
     public void setDescripcion(String descripcion) {
         this.descripcion = descripcion;
+    }
+
+    public LocalDate getFecha() {
+        return fecha;
+    }
+
+    public void setFecha(LocalDate fecha) {
+        this.fecha = fecha;
+    }
+
+    public LocalTime getHoraInicio() {
+        return horaInicio;
+    }
+
+    public void setHoraInicio(LocalTime horaInicio) {
+        this.horaInicio = horaInicio;
+    }
+
+    public int getDuracionHoras() {
+        return duracionHoras;
+    }
+
+    public void setDuracionHoras(int duracionHoras) {
+        this.duracionHoras = duracionHoras;
     }
 }
