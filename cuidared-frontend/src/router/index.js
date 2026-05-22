@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import AgendaView from '../views/AgendaView.vue'
 import SolicitudesView from '../views/SolicitudesView.vue'
 import PerfilView from '../views/PerfilView.vue'
+import MisCalificacionesView from '../views/MisCalificacionesView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -25,6 +26,11 @@ const router = createRouter({
       path: '/perfil',
       name: 'perfil',
       component: PerfilView
+    },
+    {
+      path: '/mis-calificaciones',
+      name: 'mis-calificaciones',
+      component: MisCalificacionesView
     }
   ]
 })
