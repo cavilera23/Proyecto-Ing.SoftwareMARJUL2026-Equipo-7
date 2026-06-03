@@ -1,0 +1,8 @@
+# Normalize line endings.
+* text=auto
+
+# The Maven wrapper shell script must stay LF or its shebang breaks on Unix.
+mvnw text eol=lf
+
+# Windows batch wrapper must stay CRLF.
+mvnw.cmd text eol=crlf

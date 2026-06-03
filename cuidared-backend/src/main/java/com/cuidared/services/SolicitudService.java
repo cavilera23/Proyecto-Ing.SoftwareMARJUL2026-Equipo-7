@@ -22,11 +22,15 @@ public class SolicitudService {
 
     private final SolicitudRepository solicitudRepository;
     private final UsuarioRepository usuarioRepository;
+    private final NotificacionService notificacionService;
 
     @Autowired
-    public SolicitudService(SolicitudRepository solicitudRepository, UsuarioRepository usuarioRepository) {
+    public SolicitudService(SolicitudRepository solicitudRepository,
+                            UsuarioRepository usuarioRepository,
+                            NotificacionService notificacionService) {
         this.solicitudRepository = solicitudRepository;
         this.usuarioRepository = usuarioRepository;
+        this.notificacionService = notificacionService;
     }
 
     /**
@@ -95,7 +99,15 @@ public class SolicitudService {
         Solicitud guardada = solicitudRepository.save(solicitud);
         padre.addSolicitudId(guardada.getId());
         usuarioRepository.save(padre);
-        
+
+        // 9. Registrar una notificación para el padre confirmando la solicitud
+        notificacionService.registrarNotificacion(
+            padre.getId(),
+            "Solicitud registrada",
+            "Tu solicitud de cuidado fue registrada y está PENDIENTE de ser aceptada.",
+            "SOLICITUD"
+        );
+
         return guardada;
     }
 

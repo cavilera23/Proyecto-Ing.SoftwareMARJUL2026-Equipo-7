@@ -23,8 +23,10 @@ import { RouterLink, RouterView } from "vue-router";
         <nav class="nav-links">
           <RouterLink to="/">Inicio</RouterLink>
           <RouterLink to="/agenda">Agenda</RouterLink>
+          <RouterLink to="/buscar-cuidadores">Buscar Cuidadores</RouterLink>
           <RouterLink to="/solicitudes">Solicitudes</RouterLink>
           <RouterLink to="/mis-calificaciones">Mis Calificaciones</RouterLink>
+          <RouterLink to="/notificaciones">Notificaciones</RouterLink>
           <RouterLink to="/perfil">Mi Perfil</RouterLink>
         </nav>
       </div>

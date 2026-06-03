@@ -12,3 +12,10 @@ export const listarHorariosApi = async (cuidadorId) => {
     method: 'GET'
   })
 }
+
+export const buscarCuidadoresApi = async (horario) => {
+  return await apiFetch(`/agenda/buscar-cuidadores`, {
+    method: 'POST',
+    body: JSON.stringify(horario)
+  })
+}

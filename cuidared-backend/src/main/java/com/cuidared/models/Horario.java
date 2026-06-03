@@ -49,4 +49,23 @@ public class Horario {
         return this.fechaInicio.isBefore(otro.getFechaFin())
                 && this.fechaFin.isAfter(otro.getFechaInicio());
     }
+
+    /**
+     * Indica si este bloque de horario cubre por completo a otro horario,
+     * es decir, si el horario solicitado cabe dentro de este bloque disponible.
+     */
+    public boolean contiene(Horario otro) {
+        if (
+                this.fechaInicio == null ||
+                this.fechaFin == null ||
+                otro == null ||
+                otro.getFechaInicio() == null ||
+                otro.getFechaFin() == null
+        ) {
+            return false;
+        }
+
+        return !this.fechaInicio.isAfter(otro.getFechaInicio())
+                && !this.fechaFin.isBefore(otro.getFechaFin());
+    }
 }

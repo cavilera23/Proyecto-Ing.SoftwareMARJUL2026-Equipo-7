@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Servicio para gestionar la agenda, horarios y solapamientos.
@@ -82,6 +83,39 @@ public class AgendaService {
         usuarioRepository.save(cuidador);
 
         return nuevoHorario;
+    }
+
+    /**
+     * Busca los cuidadores disponibles para una franja horaria solicitada por el usuario.
+     * Un cuidador es candidato si:
+     *  - está marcado como disponible,
+     *  - tiene un bloque de disponibilidad que cubre por completo la franja solicitada, y
+     *  - no tiene un servicio ya aceptado que se solape con esa franja.
+     *
+     * @param solicitado Franja horaria que el usuario necesita cubrir
+     * @return Lista de cuidadores que pueden atender sin conflictos
+     */
+    public List<Cuidador> buscarCuidadoresDisponibles(Horario solicitado) {
+        if (solicitado == null || solicitado.getFechaInicio() == null || solicitado.getFechaFin() == null) {
+            throw new ReglaNegocioException("Debe especificar la fecha y hora de inicio y fin de su necesidad.");
+        }
+
+        if (!solicitado.getFechaInicio().isBefore(solicitado.getFechaFin())) {
+            throw new ReglaNegocioException("La hora de inicio debe ser anterior a la hora de fin.");
+        }
+
+        return usuarioRepository.findAll().stream()
+                .filter(u -> u instanceof Cuidador)
+                .map(u -> (Cuidador) u)
+                .filter(Cuidador::isDisponible)
+                .filter(c -> tieneBloqueQueCubre(c, solicitado))
+                .filter(c -> verificarDisponibilidadCuidador(c.getId(), solicitado))
+                .collect(Collectors.toList());
+    }
+
+    private boolean tieneBloqueQueCubre(Cuidador cuidador, Horario solicitado) {
+        return cuidador.getHorariosDisponibles().stream()
+                .anyMatch(bloque -> bloque.contiene(solicitado));
     }
 
     public List<Horario> obtenerHorariosCuidador(String cuidadorId) {

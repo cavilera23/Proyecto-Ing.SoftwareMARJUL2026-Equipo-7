@@ -2,6 +2,7 @@ package com.cuidared.controllers;
 
 import com.cuidared.exceptions.ReglaNegocioException;
 import com.cuidared.exceptions.SolapamientoHorarioException;
+import com.cuidared.models.Cuidador;
 import com.cuidared.models.Horario;
 import com.cuidared.services.AgendaService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,12 @@ public class AgendaController {
     ) {
         boolean disponible = agendaService.verificarDisponibilidadCuidador(cuidadorId, horario);
         return ResponseEntity.ok(disponible);
+    }
+
+    @PostMapping("/buscar-cuidadores")
+    public ResponseEntity<List<Cuidador>> buscarCuidadores(@RequestBody Horario horario) {
+        List<Cuidador> disponibles = agendaService.buscarCuidadoresDisponibles(horario);
+        return ResponseEntity.ok(disponibles);
     }
 
     @GetMapping("/horarios/{cuidadorId}")

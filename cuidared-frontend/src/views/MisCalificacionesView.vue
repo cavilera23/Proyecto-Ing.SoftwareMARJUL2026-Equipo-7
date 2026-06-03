@@ -67,6 +67,7 @@
 import { ref, onMounted } from 'vue'
 import Swal from 'sweetalert2'
 import { apiFetch } from '../services/api'
+import { crearCalificacionApi } from '../services/calificacionService'
 import SolicitudCard from '../components/SolicitudCard.vue'
 
 // ID hardcoded según lo solicitado para pruebas visuales
@@ -131,29 +132,59 @@ const handleCancelar = (id) => {
 const handleCalificar = (id) => {
   Swal.fire({
     title: 'Calificar Servicio',
-    input: 'select',
-    inputOptions: {
-      '5': '⭐⭐⭐⭐⭐ - Excelente',
-      '4': '⭐⭐⭐⭐ - Muy Bueno',
-      '3': '⭐⭐⭐ - Bueno',
-      '2': '⭐⭐ - Regular',
-      '1': '⭐ - Malo'
-    },
-    inputPlaceholder: 'Selecciona una calificación',
+    html: `
+      <select id="swal-puntuacion" class="swal2-select" style="display:block;margin:0 auto 1rem;width:80%">
+        <option value="" disabled selected>Selecciona una calificación</option>
+        <option value="5">⭐⭐⭐⭐⭐ - Excelente</option>
+        <option value="4">⭐⭐⭐⭐ - Muy Bueno</option>
+        <option value="3">⭐⭐⭐ - Bueno</option>
+        <option value="2">⭐⭐ - Regular</option>
+        <option value="1">⭐ - Malo</option>
+      </select>
+      <textarea id="swal-comentario" class="swal2-textarea" placeholder="Comentario (opcional)" style="width:80%"></textarea>
+    `,
     showCancelButton: true,
     confirmButtonText: 'Enviar',
     cancelButtonText: 'Cancelar',
     background: '#1f2937',
-    color: '#fff'
-  }).then((result) => {
+    color: '#fff',
+    preConfirm: () => {
+      const puntuacion = document.getElementById('swal-puntuacion').value
+      if (!puntuacion) {
+        Swal.showValidationMessage('Debes seleccionar una calificación')
+        return false
+      }
+      return {
+        puntuacion: parseInt(puntuacion, 10),
+        comentario: document.getElementById('swal-comentario').value
+      }
+    }
+  }).then(async (result) => {
     if (result.isConfirmed && result.value) {
-      Swal.fire({
-        title: '¡Gracias!',
-        text: `Has calificado este servicio con ${result.value} estrellas.`,
-        icon: 'success',
-        background: '#1f2937',
-        color: '#fff'
-      })
+      try {
+        await crearCalificacionApi({
+          solicitudId: id,
+          puntuacion: result.value.puntuacion,
+          comentario: result.value.comentario
+        })
+        await Swal.fire({
+          title: '¡Gracias!',
+          text: `Has calificado este servicio con ${result.value.puntuacion} estrellas.`,
+          icon: 'success',
+          background: '#1f2937',
+          color: '#fff'
+        })
+        // Recargar para reflejar el estado actualizado
+        cargarSolicitudes()
+      } catch (error) {
+        Swal.fire({
+          icon: 'error',
+          title: 'No se pudo calificar',
+          text: error.message,
+          background: '#1f2937',
+          color: '#fff'
+        })
+      }
     }
   })
 }
