@@ -66,6 +66,27 @@ public class NotificacionService {
     }
 
     /**
+     * Programa una notificación para una fecha y hora futura (Sprint 2 - versión básica).
+     */
+    public Notificacion programarNotificacion(Notificacion notificacion) {
+        if (notificacion.getFechaProgramada() == null) {
+            throw new ReglaNegocioException("Debe indicar la fecha y hora programada.");
+        }
+        if (notificacion.getFechaProgramada().isBefore(java.time.LocalDateTime.now())) {
+            throw new ReglaNegocioException("La fecha programada no puede ser en el pasado.");
+        }
+        return registrarNotificacion(notificacion);
+    }
+
+    /**
+     * Elimina una notificación (Sprint 2 - versión básica).
+     */
+    public void eliminarNotificacion(String id) {
+        obtenerOError(id);
+        notificacionRepository.deleteById(id);
+    }
+
+    /**
      * Silencia una notificación (deja de mostrarse en el listado por defecto).
      */
     public Notificacion silenciarNotificacion(String id) {

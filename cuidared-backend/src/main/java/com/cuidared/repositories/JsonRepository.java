@@ -2,8 +2,6 @@ package com.cuidared.repositories;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
-import org.springframework.stereotype.Repository;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -12,6 +10,7 @@ import java.util.Optional;
 
 /**
  * Repositorio base genérico para manejar la persistencia en archivos JSON.
+ * 
  * @param <T> Tipo de entidad a persistir
  */
 public abstract class JsonRepository<T> {
@@ -24,7 +23,7 @@ public abstract class JsonRepository<T> {
         this.jsonFile = new File(filePath);
         this.objectMapper = objectMapper;
         this.typeParameterClass = typeParameterClass;
-        
+
         // Crear el archivo si no existe
         if (!jsonFile.exists()) {
             try {
@@ -39,11 +38,13 @@ public abstract class JsonRepository<T> {
 
     /**
      * Obtiene todos los registros del archivo JSON.
+     * 
      * @return Lista de entidades
      */
     public List<T> findAll() {
         try {
-            CollectionType listType = objectMapper.getTypeFactory().constructCollectionType(ArrayList.class, typeParameterClass);
+            CollectionType listType = objectMapper.getTypeFactory().constructCollectionType(ArrayList.class,
+                    typeParameterClass);
             List<T> data = objectMapper.readValue(jsonFile, listType);
             return data != null ? data : new ArrayList<>();
         } catch (IOException e) {
@@ -53,6 +54,7 @@ public abstract class JsonRepository<T> {
 
     /**
      * Guarda la lista completa de entidades en el archivo JSON.
+     * 
      * @param entities Lista a guardar
      */
     protected void saveAll(List<T> entities) {
@@ -65,13 +67,14 @@ public abstract class JsonRepository<T> {
 
     /**
      * Guarda o actualiza una entidad.
+     * 
      * @param entity Entidad a guardar
      * @return La entidad guardada
      */
     public T save(T entity) {
         List<T> entities = findAll();
         String id = getId(entity);
-        
+
         boolean found = false;
         for (int i = 0; i < entities.size(); i++) {
             if (getId(entities.get(i)).equals(id)) {
@@ -80,17 +83,18 @@ public abstract class JsonRepository<T> {
                 break;
             }
         }
-        
+
         if (!found) {
             entities.add(entity);
         }
-        
+
         saveAll(entities);
         return entity;
     }
 
     /**
      * Busca una entidad por su ID.
+     * 
      * @param id Identificador
      * @return Optional con la entidad si se encuentra
      */
@@ -101,7 +105,23 @@ public abstract class JsonRepository<T> {
     }
 
     /**
+     * Elimina una entidad por su ID.
+     *
+     * @param id Identificador de la entidad a eliminar
+     * @return true si se eliminó alguna entidad, false si no existía
+     */
+    public boolean deleteById(String id) {
+        List<T> entities = findAll();
+        boolean removed = entities.removeIf(entity -> getId(entity).equals(id));
+        if (removed) {
+            saveAll(entities);
+        }
+        return removed;
+    }
+
+    /**
      * Método abstracto para obtener el ID de la entidad genérica.
+     *
      * @param entity Entidad
      * @return ID como String
      */

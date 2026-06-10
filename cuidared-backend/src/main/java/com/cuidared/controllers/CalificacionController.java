@@ -52,4 +52,25 @@ public class CalificacionController {
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
+
+    // --- SPRINT 2 ---
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> modificarCalificacion(@PathVariable String id, @RequestBody Calificacion cambios) {
+        try {
+            return ResponseEntity.ok(calificacionService.modificarCalificacion(id, cambios));
+        } catch (ReglaNegocioException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> eliminarCalificacion(@PathVariable String id) {
+        try {
+            calificacionService.eliminarCalificacion(id);
+            return ResponseEntity.noContent().build();
+        } catch (ReglaNegocioException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
 }

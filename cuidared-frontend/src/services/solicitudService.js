@@ -12,3 +12,16 @@ export const listarSolicitudesApi = async () => {
     method: 'GET'
   })
 }
+
+export const modificarSolicitudApi = async (id, cambios) => {
+  return await apiFetch(`/intercambio/solicitudes/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(cambios)
+  })
+}
+
+export const cancelarSolicitudApi = async (id) => {
+  return await apiFetch(`/intercambio/solicitudes/${id}/cancelar`, {
+    method: 'PATCH'
+  })
+}

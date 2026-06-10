@@ -102,6 +102,48 @@ public class CalificacionService {
     }
 
     /**
+     * Modifica una calificación existente (Sprint 2 - versión básica).
+     * Permite cambiar la puntuación y/o el comentario, recalculando el promedio.
+     */
+    public Calificacion modificarCalificacion(String id, Calificacion cambios) {
+        Calificacion existente = calificacionRepository.findById(id)
+                .orElseThrow(() -> new ReglaNegocioException("La calificación no existe."));
+
+        if (cambios.getPuntuacion() != 0) {
+            if (cambios.getPuntuacion() < 1 || cambios.getPuntuacion() > 5) {
+                throw new ReglaNegocioException("La puntuación debe estar entre 1 y 5 estrellas.");
+            }
+            existente.setPuntuacion(cambios.getPuntuacion());
+        }
+        if (cambios.getComentario() != null) {
+            existente.setComentario(cambios.getComentario());
+        }
+
+        Calificacion guardada = calificacionRepository.save(existente);
+
+        if (existente.getCuidadorId() != null) {
+            actualizarPromedioCuidador(existente.getCuidadorId());
+        }
+
+        return guardada;
+    }
+
+    /**
+     * Elimina una calificación (Sprint 2 - versión básica).
+     * Recalcula el promedio del cuidador tras la eliminación.
+     */
+    public void eliminarCalificacion(String id) {
+        Calificacion existente = calificacionRepository.findById(id)
+                .orElseThrow(() -> new ReglaNegocioException("La calificación no existe."));
+
+        calificacionRepository.deleteById(id);
+
+        if (existente.getCuidadorId() != null) {
+            actualizarPromedioCuidador(existente.getCuidadorId());
+        }
+    }
+
+    /**
      * Recalcula y persiste el promedio de calificaciones de un cuidador.
      */
     private void actualizarPromedioCuidador(String cuidadorId) {
@@ -112,6 +154,8 @@ public class CalificacionService {
 
         List<Calificacion> delCuidador = obtenerPorCuidador(cuidadorId);
         if (delCuidador.isEmpty()) {
+            cuidador.setCalificacionPromedio(0.0);
+            usuarioRepository.save(cuidador);
             return;
         }
 

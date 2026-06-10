@@ -49,4 +49,24 @@ public class IntercambioController {
     public ResponseEntity<Map<String, List<Solicitud>>> obtenerHistorialYFuturas(@PathVariable String padreId) {
         return ResponseEntity.ok(solicitudService.obtenerHistorialYFuturasPorPadre(padreId));
     }
+
+    // --- SPRINT 2 ---
+
+    @PutMapping("/solicitudes/{id}")
+    public ResponseEntity<?> modificarSolicitud(@PathVariable String id, @RequestBody Solicitud cambios) {
+        try {
+            return ResponseEntity.ok(solicitudService.modificarSolicitud(id, cambios));
+        } catch (ReglaNegocioException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PatchMapping("/solicitudes/{id}/cancelar")
+    public ResponseEntity<?> cancelarSolicitud(@PathVariable String id) {
+        try {
+            return ResponseEntity.ok(solicitudService.cancelarSolicitud(id));
+        } catch (ReglaNegocioException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
 }

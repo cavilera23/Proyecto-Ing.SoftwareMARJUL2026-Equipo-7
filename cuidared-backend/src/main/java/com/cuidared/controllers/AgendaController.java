@@ -19,7 +19,7 @@ import java.util.List;
 @CrossOrigin(
         origins = "*",
         allowedHeaders = "*",
-        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.OPTIONS}
+        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS}
 )
 public class AgendaController {
 
@@ -58,6 +58,27 @@ public class AgendaController {
     ) {
         Horario registrado = agendaService.registrarHorarioDisponible(cuidadorId, horario);
         return new ResponseEntity<>(registrado, HttpStatus.CREATED);
+    }
+
+    // --- SPRINT 2 ---
+
+    @PutMapping("/horarios/{cuidadorId}/{indice}")
+    public ResponseEntity<Horario> modificarHorario(
+            @PathVariable String cuidadorId,
+            @PathVariable int indice,
+            @RequestBody Horario horario
+    ) {
+        Horario actualizado = agendaService.modificarHorario(cuidadorId, indice, horario);
+        return ResponseEntity.ok(actualizado);
+    }
+
+    @DeleteMapping("/horarios/{cuidadorId}/{indice}")
+    public ResponseEntity<Void> eliminarHorario(
+            @PathVariable String cuidadorId,
+            @PathVariable int indice
+    ) {
+        agendaService.eliminarHorario(cuidadorId, indice);
+        return ResponseEntity.noContent().build();
     }
 
     @ExceptionHandler(ReglaNegocioException.class)

@@ -20,6 +20,9 @@ public class Notificacion {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime fechaCreacion;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime fechaProgramada;
+
     public Notificacion() {
         this.id = UUID.randomUUID().toString();
         this.fechaCreacion = LocalDateTime.now();
@@ -90,5 +93,13 @@ public class Notificacion {
 
     public void setFechaCreacion(LocalDateTime fechaCreacion) {
         this.fechaCreacion = fechaCreacion;
+    }
+
+    public LocalDateTime getFechaProgramada() {
+        return fechaProgramada;
+    }
+
+    public void setFechaProgramada(LocalDateTime fechaProgramada) {
+        this.fechaProgramada = fechaProgramada;
     }
 }

@@ -86,6 +86,75 @@ public class AgendaService {
     }
 
     /**
+     * Modifica un bloque de disponibilidad existente de un cuidador (Sprint 2 - versión básica).
+     * El bloque se identifica por su posición (índice) en la lista de horarios disponibles.
+     */
+    public Horario modificarHorario(String cuidadorId, int indice, Horario nuevoHorario) {
+        Cuidador cuidador = obtenerCuidador(cuidadorId);
+        List<Horario> horarios = cuidador.getHorariosDisponibles();
+
+        if (indice < 0 || indice >= horarios.size()) {
+            throw new ReglaNegocioException("El horario indicado no existe.");
+        }
+
+        if (nuevoHorario == null || nuevoHorario.getFechaInicio() == null || nuevoHorario.getFechaFin() == null) {
+            throw new ReglaNegocioException("La fecha de inicio y fin son obligatorias.");
+        }
+
+        if (!nuevoHorario.getFechaInicio().isBefore(nuevoHorario.getFechaFin())) {
+            throw new ReglaNegocioException("La hora de inicio debe ser anterior a la hora de fin.");
+        }
+
+        // Validar que no choque con OTROS bloques (se excluye el que se está modificando)
+        for (int i = 0; i < horarios.size(); i++) {
+            if (i != indice && horarios.get(i).seSolapaCon(nuevoHorario)) {
+                throw new SolapamientoHorarioException(
+                        "El horario seleccionado choca con un bloque de disponibilidad ya existente.");
+            }
+        }
+
+        if (!verificarDisponibilidadCuidador(cuidadorId, nuevoHorario)) {
+            throw new SolapamientoHorarioException(
+                    "El horario seleccionado choca con un servicio ya agendado y aceptado.");
+        }
+
+        horarios.set(indice, nuevoHorario);
+        usuarioRepository.save(cuidador);
+
+        return nuevoHorario;
+    }
+
+    /**
+     * Elimina un bloque de disponibilidad de un cuidador (Sprint 2 - versión básica).
+     * El bloque se identifica por su posición (índice) en la lista de horarios disponibles.
+     */
+    public void eliminarHorario(String cuidadorId, int indice) {
+        Cuidador cuidador = obtenerCuidador(cuidadorId);
+        List<Horario> horarios = cuidador.getHorariosDisponibles();
+
+        if (indice < 0 || indice >= horarios.size()) {
+            throw new ReglaNegocioException("El horario indicado no existe.");
+        }
+
+        horarios.remove(indice);
+        usuarioRepository.save(cuidador);
+    }
+
+    /**
+     * Obtiene un cuidador validando su existencia y tipo.
+     */
+    private Cuidador obtenerCuidador(String cuidadorId) {
+        if (cuidadorId == null || cuidadorId.isBlank()) {
+            throw new ReglaNegocioException("El ID del cuidador es obligatorio.");
+        }
+        Optional<Usuario> userOpt = usuarioRepository.findById(cuidadorId);
+        if (userOpt.isEmpty() || !(userOpt.get() instanceof Cuidador)) {
+            throw new ReglaNegocioException("Cuidador no encontrado.");
+        }
+        return (Cuidador) userOpt.get();
+    }
+
+    /**
      * Busca los cuidadores disponibles para una franja horaria solicitada por el usuario.
      * Un cuidador es candidato si:
      *  - está marcado como disponible,

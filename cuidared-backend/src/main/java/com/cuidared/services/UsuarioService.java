@@ -56,6 +56,36 @@ public class UsuarioService {
         return usuarioRepository.save(usuario);
     }
 
+    /**
+     * Modifica la información básica de un perfil existente (Sprint 2 - versión básica).
+     * Actualiza nombre, correo y/o teléfono si vienen informados.
+     */
+    public Usuario modificarInformacion(String id, Usuario cambios) {
+        Usuario existente = usuarioRepository.findById(id)
+                .orElseThrow(() -> new ReglaNegocioException("El usuario no existe."));
+
+        if (cambios.getNombre() != null && !cambios.getNombre().isBlank()) {
+            existente.setNombre(cambios.getNombre());
+        }
+        if (cambios.getCorreo() != null && !cambios.getCorreo().isBlank()) {
+            existente.setCorreo(cambios.getCorreo());
+        }
+        if (cambios.getTelefono() != null && !cambios.getTelefono().isBlank()) {
+            existente.setTelefono(cambios.getTelefono());
+        }
+
+        return usuarioRepository.save(existente);
+    }
+
+    /**
+     * Elimina un perfil de usuario (Sprint 2 - versión básica).
+     */
+    public void eliminarPerfil(String id) {
+        usuarioRepository.findById(id)
+                .orElseThrow(() -> new ReglaNegocioException("El usuario no existe."));
+        usuarioRepository.deleteById(id);
+    }
+
     public List<Usuario> obtenerTodos() {
         return usuarioRepository.findAll();
     }

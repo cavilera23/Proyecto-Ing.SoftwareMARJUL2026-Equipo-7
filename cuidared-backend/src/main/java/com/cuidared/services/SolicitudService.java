@@ -115,6 +115,78 @@ public class SolicitudService {
         return solicitudRepository.findAll();
     }
 
+    /**
+     * Modifica una solicitud existente (Sprint 2 - versión básica).
+     * Solo se permiten cambios mientras la solicitud siga PENDIENTE.
+     * @param id ID de la solicitud a modificar
+     * @param cambios Datos nuevos a aplicar
+     * @return Solicitud actualizada
+     */
+    public Solicitud modificarSolicitud(String id, Solicitud cambios) {
+        Solicitud existente = solicitudRepository.findById(id)
+                .orElseThrow(() -> new ReglaNegocioException("La solicitud no existe."));
+
+        if (existente.getEstado() != EstadoSolicitud.PENDIENTE) {
+            throw new ReglaNegocioException("Solo se pueden modificar solicitudes pendientes.");
+        }
+
+        if (cambios.getFecha() != null) {
+            if (cambios.getFecha().isBefore(java.time.LocalDate.now())) {
+                throw new ReglaNegocioException("La fecha no puede ser anterior a hoy");
+            }
+            existente.setFecha(cambios.getFecha());
+        }
+        if (cambios.getHoraInicio() != null) {
+            existente.setHoraInicio(cambios.getHoraInicio());
+        }
+        if (cambios.getDuracionHoras() > 0) {
+            if (cambios.getDuracionHoras() < 1 || cambios.getDuracionHoras() > 12) {
+                throw new ReglaNegocioException("La duración debe ser entre 1 y 12 horas");
+            }
+            existente.setDuracionHoras(cambios.getDuracionHoras());
+        }
+        if (cambios.getTipo() != null) {
+            existente.setTipo(cambios.getTipo());
+        }
+        if (cambios.getDescripcion() != null) {
+            existente.setDescripcion(cambios.getDescripcion());
+        }
+        if (cambios.getHorario() != null) {
+            existente.setHorario(cambios.getHorario());
+        }
+
+        return solicitudRepository.save(existente);
+    }
+
+    /**
+     * Cancela una solicitud existente (Sprint 2 - versión básica).
+     * @param id ID de la solicitud a cancelar
+     * @return Solicitud cancelada
+     */
+    public Solicitud cancelarSolicitud(String id) {
+        Solicitud existente = solicitudRepository.findById(id)
+                .orElseThrow(() -> new ReglaNegocioException("La solicitud no existe."));
+
+        if (existente.getEstado() == EstadoSolicitud.FINALIZADA) {
+            throw new ReglaNegocioException("No se puede cancelar una solicitud finalizada.");
+        }
+        if (existente.getEstado() == EstadoSolicitud.CANCELADA) {
+            throw new ReglaNegocioException("La solicitud ya está cancelada.");
+        }
+
+        existente.setEstado(EstadoSolicitud.CANCELADA);
+        Solicitud guardada = solicitudRepository.save(existente);
+
+        notificacionService.registrarNotificacion(
+            existente.getPadreId(),
+            "Solicitud cancelada",
+            "Tu solicitud de cuidado fue cancelada.",
+            "SOLICITUD"
+        );
+
+        return guardada;
+    }
+
     // --- LÓGICA DE JESÚS RECUPERADA (Separación de Historial y Citas Futuras) ---
     /**
      * Obtiene todas las solicitudes de un padre y las separa en historial y programación futura.

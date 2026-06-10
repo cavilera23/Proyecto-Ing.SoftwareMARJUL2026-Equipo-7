@@ -19,3 +19,16 @@ export const buscarCuidadoresApi = async (horario) => {
     body: JSON.stringify(horario)
   })
 }
+
+export const modificarHorarioApi = async (cuidadorId, indice, horario) => {
+  return await apiFetch(`/agenda/horarios/${cuidadorId}/${indice}`, {
+    method: 'PUT',
+    body: JSON.stringify(horario)
+  })
+}
+
+export const eliminarHorarioApi = async (cuidadorId, indice) => {
+  return await apiFetch(`/agenda/horarios/${cuidadorId}/${indice}`, {
+    method: 'DELETE'
+  })
+}

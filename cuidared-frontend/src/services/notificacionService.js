@@ -13,6 +13,19 @@ export const registrarNotificacionApi = async (notificacion) => {
   })
 }
 
+export const programarNotificacionApi = async (notificacion) => {
+  return await apiFetch(`/notificaciones/programar`, {
+    method: 'POST',
+    body: JSON.stringify(notificacion)
+  })
+}
+
+export const eliminarNotificacionApi = async (id) => {
+  return await apiFetch(`/notificaciones/${id}`, {
+    method: 'DELETE'
+  })
+}
+
 export const silenciarNotificacionApi = async (id) => {
   return await apiFetch(`/notificaciones/${id}/silenciar`, {
     method: 'PATCH'

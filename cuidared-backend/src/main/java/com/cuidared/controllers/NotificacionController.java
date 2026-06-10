@@ -43,6 +43,26 @@ public class NotificacionController {
         return ResponseEntity.ok(notificacionService.obtenerPorUsuario(usuarioId, incluirSilenciadas));
     }
 
+    @PostMapping("/programar")
+    public ResponseEntity<?> programarNotificacion(@RequestBody Notificacion notificacion) {
+        try {
+            Notificacion nueva = notificacionService.programarNotificacion(notificacion);
+            return new ResponseEntity<>(nueva, HttpStatus.CREATED);
+        } catch (ReglaNegocioException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> eliminarNotificacion(@PathVariable String id) {
+        try {
+            notificacionService.eliminarNotificacion(id);
+            return ResponseEntity.noContent().build();
+        } catch (ReglaNegocioException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PatchMapping("/{id}/silenciar")
     public ResponseEntity<?> silenciar(@PathVariable String id) {
         try {

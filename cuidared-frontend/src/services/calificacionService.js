@@ -18,3 +18,16 @@ export const obtenerCalificacionPorSolicitudApi = async (solicitudId) => {
     method: 'GET'
   })
 }
+
+export const modificarCalificacionApi = async (id, cambios) => {
+  return await apiFetch(`/calificaciones/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(cambios)
+  })
+}
+
+export const eliminarCalificacionApi = async (id) => {
+  return await apiFetch(`/calificaciones/${id}`, {
+    method: 'DELETE'
+  })
+}
