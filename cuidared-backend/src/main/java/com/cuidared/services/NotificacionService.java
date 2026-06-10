@@ -66,7 +66,9 @@ public class NotificacionService {
     }
 
     /**
-     * Programa una notificación para una fecha y hora futura (Sprint 2 - versión básica).
+     * Programa una notificación para una fecha y hora futura (Sprint 2).
+     * El recordatorio queda PENDIENTE (disparada = false) hasta que el
+     * planificador lo dispare al llegar la fecha, hora y minuto indicados.
      */
     public Notificacion programarNotificacion(Notificacion notificacion) {
         if (notificacion.getFechaProgramada() == null) {
@@ -75,7 +77,34 @@ public class NotificacionService {
         if (notificacion.getFechaProgramada().isBefore(java.time.LocalDateTime.now())) {
             throw new ReglaNegocioException("La fecha programada no puede ser en el pasado.");
         }
+        notificacion.setDisparada(false);
         return registrarNotificacion(notificacion);
+    }
+
+    /**
+     * Dispara todos los recordatorios cuya fecha/hora/minuto programada ya llegó.
+     * Un recordatorio pendiente (disparada = false) se "activa": se marca como
+     * disparado y se refresca su fecha de creación para que aparezca como un
+     * aviso nuevo en la bandeja del usuario.
+     *
+     * @return cantidad de notificaciones disparadas en esta ejecución
+     */
+    public int dispararNotificacionesPendientes() {
+        java.time.LocalDateTime ahora = java.time.LocalDateTime.now();
+
+        List<Notificacion> pendientes = notificacionRepository.findAll().stream()
+                .filter(n -> !n.isDisparada())
+                .filter(n -> n.getFechaProgramada() != null)
+                .filter(n -> !n.getFechaProgramada().isAfter(ahora))
+                .collect(Collectors.toList());
+
+        for (Notificacion n : pendientes) {
+            n.setDisparada(true);
+            n.setFechaCreacion(ahora); // aparece como aviso recién llegado
+            notificacionRepository.save(n);
+        }
+
+        return pendientes.size();
     }
 
     /**

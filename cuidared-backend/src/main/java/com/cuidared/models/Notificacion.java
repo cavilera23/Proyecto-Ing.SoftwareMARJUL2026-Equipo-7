@@ -16,6 +16,7 @@ public class Notificacion {
     private String tipo;        // INFO, SOLICITUD, CALIFICACION, etc.
     private boolean leida;
     private boolean silenciada;
+    private boolean disparada; // true = ya fue avisada/activa; false = recordatorio aún pendiente
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime fechaCreacion;
@@ -28,6 +29,7 @@ public class Notificacion {
         this.fechaCreacion = LocalDateTime.now();
         this.leida = false;
         this.silenciada = false;
+        this.disparada = true;
         this.tipo = "INFO";
     }
 
@@ -101,5 +103,13 @@ public class Notificacion {
 
     public void setFechaProgramada(LocalDateTime fechaProgramada) {
         this.fechaProgramada = fechaProgramada;
+    }
+
+    public boolean isDisparada() {
+        return disparada;
+    }
+
+    public void setDisparada(boolean disparada) {
+        this.disparada = disparada;
     }
 }
