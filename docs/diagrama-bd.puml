@@ -32,6 +32,11 @@ entity "cuidador_horarios" as chorarios {
   fecha_inicio : timestamp
   fecha_fin : timestamp
 }
+note bottom of chorarios
+  La lista se ordena por fecha_inicio
+  (@OrderBy en el modelo), sin columna
+  de orden física.
+end note
 
 entity "padre_solicitudes" as psolic {
   * padre_id : varchar <<FK>>

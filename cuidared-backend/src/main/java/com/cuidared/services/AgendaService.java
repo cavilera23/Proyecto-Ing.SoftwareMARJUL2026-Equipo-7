@@ -10,6 +10,7 @@ import com.cuidared.repositories.SolicitudRepository;
 import com.cuidared.repositories.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
@@ -89,6 +90,7 @@ public class AgendaService {
      * Modifica un bloque de disponibilidad existente de un cuidador (Sprint 2 - versión básica).
      * El bloque se identifica por su posición (índice) en la lista de horarios disponibles.
      */
+    @Transactional
     public Horario modificarHorario(String cuidadorId, int indice, Horario nuevoHorario) {
         Cuidador cuidador = obtenerCuidador(cuidadorId);
         List<Horario> horarios = cuidador.getHorariosDisponibles();
@@ -128,6 +130,7 @@ public class AgendaService {
      * Elimina un bloque de disponibilidad de un cuidador (Sprint 2 - versión básica).
      * El bloque se identifica por su posición (índice) en la lista de horarios disponibles.
      */
+    @Transactional
     public void eliminarHorario(String cuidadorId, int indice) {
         Cuidador cuidador = obtenerCuidador(cuidadorId);
         List<Horario> horarios = cuidador.getHorariosDisponibles();

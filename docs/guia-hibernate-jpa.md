@@ -445,6 +445,37 @@ usa siempre `update`. Solo usa `create` cuando quieras empezar de cero intencion
 
 ---
 
+### Orden de los horarios del cuidador — por qué NO usamos `@OrderColumn`
+
+Los endpoints de modificar/eliminar horario identifican cada bloque por su **índice** en la
+lista, así que el orden de `Cuidador.horariosDisponibles` debe ser estable.
+
+La forma "obvia" sería `@OrderColumn` (una columna física de posición), **pero no funciona**
+con esta colección: Hibernate genera esa columna como `NOT NULL` (ignora `nullable = true`),
+y al modificar la colección inserta las filas primero y rellena la posición en un segundo
+paso — ese primer insert viola el `NOT NULL` y revienta con:
+
+```
+ERROR: null value in column "posicion" violates not-null constraint
+```
+
+**La solución que usamos es `@OrderBy`:**
+
+```java
+@ElementCollection
+@CollectionTable(name = "cuidador_horarios", joinColumns = @JoinColumn(name = "cuidador_id"))
+@OrderBy("fechaInicio ASC")   // ordena al leer, sin columna física
+private List<Horario> horariosDisponibles;
+```
+
+Ventajas: orden estable y cronológico, **sin columna extra**, sin migración, y sin el bug de
+`@OrderColumn`. Como bonus, los bloques se muestran ordenados por hora de inicio en la UI.
+
+> Si vienes de una versión vieja que llegó a crear la columna `posicion`, bórrala:
+> `ALTER TABLE cuidador_horarios DROP COLUMN IF EXISTS posicion;`
+
+---
+
 ---
 
 ## 11. Setup para nuevos integrantes del equipo

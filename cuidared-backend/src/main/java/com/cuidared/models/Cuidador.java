@@ -7,6 +7,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OrderBy;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,6 +27,10 @@ public class Cuidador extends Usuario {
 
     @ElementCollection
     @CollectionTable(name = "cuidador_horarios", joinColumns = @JoinColumn(name = "cuidador_id"))
+    // @OrderBy ordena los bloques por fecha de inicio al leerlos, sin columna física.
+    // Da un orden estable (los endpoints modificar/eliminar usan el índice en este orden)
+    // y evita el bug de @OrderColumn, que Hibernate crea NOT NULL y luego viola al insertar.
+    @OrderBy("fechaInicio ASC")
     private List<Horario> horariosDisponibles;
 
     public Cuidador() {

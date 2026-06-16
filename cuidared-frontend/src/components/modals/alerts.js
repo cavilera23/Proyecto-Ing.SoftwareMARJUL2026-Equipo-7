@@ -50,3 +50,17 @@ export const showInfoAlert = (title, text) => {
     confirmButtonColor: "#3b82f6",
   });
 };
+
+export const showConfirmAlert = (title, text) => {
+  return Swal.fire({
+    ...baseConfig,
+    icon: "warning",
+    title,
+    text,
+    showCancelButton: true,
+    confirmButtonText: "Sí, continuar",
+    cancelButtonText: "Cancelar",
+    confirmButtonColor: "#ef4444",
+    cancelButtonColor: "#6b7280",
+  });
+};

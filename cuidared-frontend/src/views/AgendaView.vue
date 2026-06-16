@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, watch, nextTick } from "vue";
 import FullCalendar from "@fullcalendar/vue3";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
@@ -8,10 +8,14 @@ import {
   showSuccessAlert,
   showErrorAlert,
   showWarningAlert,
+  showConfirmAlert,
 } from "@/components/modals/alerts";
-import { listarHorariosApi } from "@/services/agendaService";
-
-const API_URL = "http://localhost:8080";
+import {
+  listarHorariosApi,
+  agregarHorarioApi,
+  modificarHorarioApi,
+  eliminarHorarioApi,
+} from "@/services/agendaService";
 
 const cuidadorId = ref(localStorage.getItem('cuidadorId') || '')
 
@@ -31,6 +35,17 @@ const mensaje = ref("");
 const tipoMensaje = ref("");
 
 const calendarEvents = ref([]);
+
+// Lista cruda de bloques registrados, cada uno con su índice (el backend
+// identifica cada bloque por su posición en la lista del cuidador).
+const horariosRegistrados = ref([]);
+
+// Estado de edición: cuando es true, el formulario actualiza en vez de crear.
+const modoEdicion = ref(false);
+const indiceEditando = ref(null);
+
+// Referencia al panel del formulario, para llevar la vista hasta él al editar.
+const panelRef = ref(null);
 
 const horasInicio = [
   { value: "07:00", label: "07:00 a.m." },
@@ -101,16 +116,24 @@ const calendarOptions = computed(() => ({
     right: "dayGridMonth",
   },
   dateClick: (info) => {
-    fechaSeleccionada.value = info.dateStr;
-    mensaje.value = "";
-    tipoMensaje.value = "";
+    seleccionarFecha(info.dateStr);
   },
 }));
 
 const cargarHorarios = async (id) => {
   try {
     const horarios = await listarHorariosApi(id);
-    calendarEvents.value = horarios.map((h) => ({
+
+    // Guardamos la lista con el índice de cada bloque (su posición en el array).
+    // Ese índice es el que el backend espera en PUT/DELETE /horarios/{id}/{indice}.
+    horariosRegistrados.value = horarios.map((h, indice) => ({
+      indice,
+      fechaInicio: h.fechaInicio,
+      fechaFin: h.fechaFin,
+    }));
+
+    // El calendario refleja exactamente los mismos bloques.
+    calendarEvents.value = horariosRegistrados.value.map((h) => ({
       title: "Disponible",
       start: h.fechaInicio,
       end: h.fechaFin,
@@ -127,16 +150,15 @@ onMounted(async () => {
   }
 });
 
-const registrarHorario = async () => {
-  mensaje.value = "";
-  tipoMensaje.value = "";
-
+// Valida el formulario y construye el objeto Horario que entiende el backend.
+// Devuelve null (y muestra el aviso) si algo está incompleto.
+const construirHorarioDesdeFormulario = async () => {
   if (!cuidadorId.value.trim()) {
     await showWarningAlert(
       "ID requerido",
-      "Debes ingresar tu ID de cuidador antes de registrar un horario.",
+      "Debes ingresar tu ID de cuidador antes de gestionar tus horarios.",
     );
-    return;
+    return null;
   }
 
   if (!fechaSeleccionada.value || !horaInicio.value || !horaFin.value) {
@@ -144,7 +166,7 @@ const registrarHorario = async () => {
       "Campos incompletos",
       "Debes seleccionar una fecha, una hora de inicio y una hora de fin.",
     );
-    return;
+    return null;
   }
 
   if (horaInicio.value >= horaFin.value) {
@@ -152,66 +174,170 @@ const registrarHorario = async () => {
       "Horario inválido",
       "La hora de inicio debe ser anterior a la hora de fin.",
     );
-    return;
+    return null;
   }
 
-  const startIso = `${fechaSeleccionada.value}T${horaInicio.value}:00`;
-  const endIso = `${fechaSeleccionada.value}T${horaFin.value}:00`;
-
-  const horario = {
-    fechaInicio: startIso,
-    fechaFin: endIso,
+  return {
+    fechaInicio: `${fechaSeleccionada.value}T${horaInicio.value}:00`,
+    fechaFin: `${fechaSeleccionada.value}T${horaFin.value}:00`,
   };
+};
 
-  console.log("Enviando horario al backend:", horario);
+// Botón principal del formulario: crea un bloque nuevo o actualiza el que se
+// está editando, según el modoEdicion.
+const guardarHorario = async () => {
+  mensaje.value = "";
+  tipoMensaje.value = "";
+
+  const horario = await construirHorarioDesdeFormulario();
+  if (!horario) return;
+
+  const editando = modoEdicion.value;
 
   try {
-    const respuesta = await fetch(
-      `${API_URL}/api/v1/agenda/horarios/${cuidadorId.value}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(horario),
-      },
-    );
-
-    if (!respuesta.ok) {
-      const errorTexto = await respuesta.text();
-      throw new Error(errorTexto || "Error al registrar el horario.");
+    if (editando) {
+      await modificarHorarioApi(cuidadorId.value, indiceEditando.value, horario);
+    } else {
+      await agregarHorarioApi(cuidadorId.value, horario);
     }
 
-    const data = await respuesta.json();
+    // Recargamos desde el backend para que la lista y los índices queden
+    // alineados con lo que realmente quedó guardado.
+    await cargarHorarios(cuidadorId.value);
+    cancelarEdicion();
 
-    calendarEvents.value = [
-      ...calendarEvents.value,
-      {
-        title: "Disponible",
-        start: data.fechaInicio,
-        end: data.fechaFin,
-        color: "#10b981",
-      },
-    ];
-
-    mensaje.value = "¡Bloque de horario registrado con éxito!";
+    mensaje.value = editando
+      ? "¡Bloque de horario actualizado!"
+      : "¡Bloque de horario registrado con éxito!";
     tipoMensaje.value = "exito";
 
     await showSuccessAlert(
-      "Disponibilidad registrada",
-      "El bloque de horario fue guardado exitosamente.",
+      editando ? "Horario actualizado" : "Disponibilidad registrada",
+      editando
+        ? "El bloque de disponibilidad fue modificado correctamente."
+        : "El bloque de horario fue guardado exitosamente.",
     );
-
-    horaInicio.value = "";
-    horaFin.value = "";
   } catch (error) {
-    console.error("Error registrando horario:", error);
-
     mensaje.value = `Error: ${error.message}`;
     tipoMensaje.value = "error";
 
-    await showErrorAlert("No se pudo registrar el horario", error.message);
+    await showErrorAlert(
+      editando ? "No se pudo actualizar el horario" : "No se pudo registrar el horario",
+      error.message,
+    );
   }
+};
+
+// Carga un bloque existente en el formulario y entra en modo edición.
+const iniciarEdicion = async (horario) => {
+  modoEdicion.value = true;
+  indiceEditando.value = horario.indice;
+
+  // El ISO viene como "2026-06-20T08:00:00": cortamos fecha y horas.
+  fechaSeleccionada.value = horario.fechaInicio.substring(0, 10); // YYYY-MM-DD
+  horaInicio.value = horario.fechaInicio.substring(11, 16); // HH:MM
+  horaFin.value = horario.fechaFin.substring(11, 16);
+
+  mensaje.value = "";
+  tipoMensaje.value = "";
+
+  // Llevamos la vista hasta el formulario para que se note que entró en edición.
+  await nextTick();
+  panelRef.value?.scrollIntoView({ behavior: "smooth", block: "center" });
+};
+
+// Sale del modo edición y limpia el formulario.
+const cancelarEdicion = () => {
+  modoEdicion.value = false;
+  indiceEditando.value = null;
+  horaInicio.value = "";
+  horaFin.value = "";
+};
+
+// Maneja el clic en un día del calendario.
+// - Si ya estás editando, el clic solo cambia la fecha del bloque en edición.
+// - Si no, decide según los bloques de ese día: con uno lo edita, con varios
+//   te manda a la lista, y sin ninguno avisa que primero hay que registrarlo.
+const seleccionarFecha = (fecha) => {
+  // En modo edición el calendario solo sirve para mover la fecha del bloque.
+  if (modoEdicion.value) {
+    fechaSeleccionada.value = fecha;
+    return;
+  }
+
+  const bloquesDelDia = horariosRegistrados.value.filter(
+    (h) => h.fechaInicio.substring(0, 10) === fecha,
+  );
+
+  if (bloquesDelDia.length === 1) {
+    // Hay exactamente un bloque ese día: lo cargamos para editar.
+    iniciarEdicion(bloquesDelDia[0]);
+    return;
+  }
+
+  // Sin bloque (o con varios) no se puede editar: preparamos para crear.
+  fechaSeleccionada.value = fecha;
+  horaInicio.value = "";
+  horaFin.value = "";
+
+  if (bloquesDelDia.length > 1) {
+    mensaje.value =
+      "Hay varios bloques en esa fecha. Elige cuál editar en la lista de abajo.";
+  } else {
+    mensaje.value =
+      "No tienes un horario registrado en esta fecha. Completa las horas para crear uno nuevo.";
+  }
+  tipoMensaje.value = "info";
+};
+
+// Elimina un bloque previa confirmación del cuidador.
+const eliminarHorario = async (horario) => {
+  const resultado = await showConfirmAlert(
+    "¿Eliminar este horario?",
+    "Esta franja dejará de estar disponible y no podrán agendarte en ese momento.",
+  );
+  if (!resultado.isConfirmed) return;
+
+  try {
+    await eliminarHorarioApi(cuidadorId.value, horario.indice);
+    await cargarHorarios(cuidadorId.value);
+
+    // Si estábamos editando justo ese bloque, salimos del modo edición.
+    if (modoEdicion.value) cancelarEdicion();
+
+    await showSuccessAlert(
+      "Horario eliminado",
+      "La franja fue retirada de tu disponibilidad.",
+    );
+  } catch (error) {
+    await showErrorAlert("No se pudo eliminar el horario", error.message);
+  }
+};
+
+// Formatea un bloque para mostrarlo en la lista (ej: "vie 20 jun · 08:00 – 12:00").
+const formatearRango = (horario) => {
+  const inicio = new Date(horario.fechaInicio);
+  const fin = new Date(horario.fechaFin);
+  const fecha = inicio.toLocaleDateString("es-VE", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+  });
+  const opcionesHora = { hour: "2-digit", minute: "2-digit" };
+  const hi = inicio.toLocaleTimeString("es-VE", opcionesHora);
+  const hf = fin.toLocaleTimeString("es-VE", opcionesHora);
+  return `${fecha} · ${hi} – ${hf}`;
+};
+
+// Devuelve la duración del bloque en formato corto (ej: "2h 30m", "1h", "45m").
+const formatearDuracion = (horario) => {
+  const ms = new Date(horario.fechaFin) - new Date(horario.fechaInicio);
+  const minutos = Math.round(ms / 60000);
+  const horas = Math.floor(minutos / 60);
+  const resto = minutos % 60;
+  if (horas && resto) return `${horas}h ${resto}m`;
+  if (horas) return `${horas}h`;
+  return `${resto}m`;
 };
 </script>
 
@@ -239,8 +365,13 @@ const registrarHorario = async () => {
     </div>
 
     <div class="grid-agenda">
-      <div class="panel-control">
-        <h3>Declarar Disponibilidad</h3>
+      <div class="panel-control" ref="panelRef">
+        <h3>{{ modoEdicion ? "Editar Bloque" : "Declarar Disponibilidad" }}</h3>
+
+        <div v-if="modoEdicion" class="banner-edicion">
+          ✏️ Estás editando un bloque existente. Ajusta las horas y pulsa
+          <strong>Actualizar</strong>, o <strong>Cancelar</strong> para volver.
+        </div>
 
         <div class="campo">
           <label>Fecha Elegida:</label>
@@ -282,17 +413,20 @@ const registrarHorario = async () => {
           </div>
         </div>
 
-        <button @click="registrarHorario" class="btn-guardar">
-          Guardar Bloque Disponible
-        </button>
+        <div class="acciones-form">
+          <button @click="guardarHorario" class="btn-guardar">
+            {{ modoEdicion ? "Actualizar Bloque" : "Guardar Bloque Disponible" }}
+          </button>
+          <button
+            v-if="modoEdicion"
+            @click="cancelarEdicion"
+            class="btn-cancelar"
+          >
+            Cancelar
+          </button>
+        </div>
 
-        <div
-          v-if="mensaje"
-          :class="[
-            'alert-box',
-            tipoMensaje === 'error' ? 'alert-error' : 'alert-exito',
-          ]"
-        >
+        <div v-if="mensaje" :class="['alert-box', `alert-${tipoMensaje}`]">
           {{ mensaje }}
         </div>
       </div>
@@ -300,6 +434,36 @@ const registrarHorario = async () => {
       <div class="calendar-wrapper">
         <FullCalendar :options="calendarOptions" />
       </div>
+    </div>
+
+    <div class="lista-horarios" v-if="cuidadorId">
+      <h3>Mis Bloques Registrados</h3>
+
+      <p v-if="horariosRegistrados.length === 0" class="vacio">
+        Aún no tienes bloques de disponibilidad registrados.
+      </p>
+
+      <ul v-else>
+        <li
+          v-for="horario in horariosRegistrados"
+          :key="horario.indice"
+          class="horario-item"
+          :class="{ 'horario-editando': modoEdicion && indiceEditando === horario.indice }"
+        >
+          <span class="horario-rango">
+            {{ formatearRango(horario) }}
+            <span class="horario-duracion">{{ formatearDuracion(horario) }}</span>
+          </span>
+          <div class="horario-acciones">
+            <button class="btn-editar" @click="iniciarEdicion(horario)">
+              Editar
+            </button>
+            <button class="btn-eliminar" @click="eliminarHorario(horario)">
+              Eliminar
+            </button>
+          </div>
+        </li>
+      </ul>
     </div>
   </div>
 </template>
@@ -388,6 +552,134 @@ select {
   background-color: var(--color-primary-hover);
 }
 
+.acciones-form {
+  display: flex;
+  gap: 10px;
+}
+
+.acciones-form .btn-guardar {
+  flex: 1;
+}
+
+.btn-cancelar {
+  padding: 12px 18px;
+  background-color: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-cancelar:hover {
+  background-color: var(--color-background-mute);
+}
+
+.lista-horarios {
+  background-color: var(--color-background-soft);
+  border: 1px solid var(--color-border);
+  padding: 25px;
+  border-radius: 12px;
+}
+
+.lista-horarios h3 {
+  color: var(--color-heading);
+  margin-bottom: 15px;
+}
+
+.lista-horarios .vacio {
+  color: var(--color-text);
+  opacity: 0.7;
+  font-size: 14px;
+}
+
+.lista-horarios ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.horario-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 12px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background-color: var(--color-background);
+}
+
+.horario-editando {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.horario-rango {
+  color: var(--color-heading);
+  font-weight: 500;
+  text-transform: capitalize;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.horario-duracion {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-primary);
+  background-color: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: none;
+}
+
+.banner-edicion {
+  background-color: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  color: var(--color-text);
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.horario-acciones {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-editar,
+.btn-eliminar {
+  padding: 7px 14px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.btn-editar {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.btn-eliminar {
+  background-color: #ef4444;
+  color: white;
+}
+
+.btn-editar:hover,
+.btn-eliminar:hover {
+  opacity: 0.85;
+}
+
 .alert-box {
   padding: 12px;
   border-radius: 6px;
@@ -406,6 +698,12 @@ select {
   background-color: rgba(16, 185, 129, 0.15);
   color: var(--color-primary);
   border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.alert-info {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
 .calendar-wrapper {

@@ -93,8 +93,9 @@ public class AgendaController {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> manejarErrorGeneral(Exception ex) {
+        // El detalle técnico queda en los logs del servidor, NUNCA se le muestra al usuario.
         ex.printStackTrace();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Error interno del servidor: " + ex.getMessage());
+                .body("Ocurrió un error inesperado. Inténtalo de nuevo en unos momentos.");
     }
 }
