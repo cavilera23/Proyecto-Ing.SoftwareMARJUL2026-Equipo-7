@@ -1,14 +1,20 @@
 package com.cuidared.models;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
  * Clase que representa una Notificación dirigida a un usuario de CuidaRed.
  */
+@Entity
+@Table(name = "notificaciones")
 public class Notificacion {
 
+    @Id
     private String id;
     private String usuarioId;
     private String titulo;

@@ -3,8 +3,19 @@ package com.cuidared.models;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import jakarta.persistence.Column;
+import jakarta.persistence.DiscriminatorColumn;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
+import jakarta.persistence.Table;
 import java.util.UUID;
 
+@Entity
+@Table(name = "usuarios")
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "tipo_usuario")
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
@@ -18,7 +29,12 @@ import java.util.UUID;
 })
 public abstract class Usuario {
 
+    // Mapeado de solo lectura sobre la columna discriminadora: la subclase
+    // (@DiscriminatorValue) es la que decide el valor que se persiste.
+    @Column(name = "tipo_usuario", insertable = false, updatable = false)
     private String tipoUsuario;
+
+    @Id
     private String id;
     private String nombre;
     private String correo;

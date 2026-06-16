@@ -1,6 +1,9 @@
 package com.cuidared.models;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -8,8 +11,11 @@ import java.util.UUID;
  * Clase que representa una Calificación que un Padre deja a un Cuidador
  * sobre un servicio ya finalizado en CuidaRed.
  */
+@Entity
+@Table(name = "calificaciones")
 public class Calificacion {
 
+    @Id
     private String id;
     private String solicitudId;
     private String autorId;     // Padre que califica

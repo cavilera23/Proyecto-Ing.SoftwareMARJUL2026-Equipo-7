@@ -1,5 +1,11 @@
 package com.cuidared.models;
 
+import jakarta.persistence.Embedded;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
@@ -7,18 +13,28 @@ import java.util.UUID;
 /**
  * Clase que representa una Solicitud de cuidado en CuidaRed.
  */
+@Entity
+@Table(name = "solicitudes")
 public class Solicitud {
 
     private LocalDate fecha;
     private LocalTime horaInicio;
     private int duracionHoras; // 1-12 horas
 
+    @Id
     private String id;
     private String padreId;
     private String cuidadorId;
+
+    @Enumerated(EnumType.STRING)
     private EstadoSolicitud estado;
+
+    @Enumerated(EnumType.STRING)
     private TipoAsistencia tipo;
+
+    @Embedded
     private Horario horario;
+
     private String descripcion;
     
     public Solicitud() {

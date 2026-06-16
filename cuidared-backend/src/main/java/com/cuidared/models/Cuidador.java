@@ -1,14 +1,31 @@
 package com.cuidared.models;
 
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
 import java.util.ArrayList;
 import java.util.List;
 
+@Entity
+@DiscriminatorValue("CUIDADOR")
 public class Cuidador extends Usuario {
 
     private boolean disponible;
     private double tarifaHora;
+
+    @ElementCollection
+    @CollectionTable(name = "cuidador_habilidades", joinColumns = @JoinColumn(name = "cuidador_id"))
+    @Enumerated(EnumType.STRING)
     private List<TipoAsistencia> habilidades;
+
     private String rutaDocumentoAntecedentes;
+
+    @ElementCollection
+    @CollectionTable(name = "cuidador_horarios", joinColumns = @JoinColumn(name = "cuidador_id"))
     private List<Horario> horariosDisponibles;
 
     public Cuidador() {

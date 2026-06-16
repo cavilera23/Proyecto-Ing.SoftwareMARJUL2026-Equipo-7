@@ -1,0 +1,101 @@
+@startuml CuidaRed_BD
+title Diagrama de Base de Datos - CuidaRed (PostgreSQL / Hibernate)
+
+hide circle
+skinparam linetype ortho
+skinparam roundcorner 8
+skinparam shadowing false
+
+' ======================= TABLAS =======================
+
+entity "usuarios" as usuarios {
+  * id : varchar <<PK>>
+  --
+  * tipo_usuario : varchar <<discriminador>>
+  nombre : varchar
+  correo : varchar
+  telefono : varchar
+  * calificacion_promedio : double
+  .. solo CUIDADOR (nullable) ..
+  disponible : boolean
+  tarifa_hora : double
+  ruta_documento_antecedentes : varchar
+}
+
+entity "cuidador_habilidades" as habilidades {
+  * cuidador_id : varchar <<FK>>
+  habilidades : varchar <<enum TipoAsistencia>>
+}
+
+entity "cuidador_horarios" as chorarios {
+  * cuidador_id : varchar <<FK>>
+  fecha_inicio : timestamp
+  fecha_fin : timestamp
+}
+
+entity "padre_solicitudes" as psolic {
+  * padre_id : varchar <<FK>>
+  solicitud_id : varchar
+}
+
+entity "solicitudes" as solicitudes {
+  * id : varchar <<PK>>
+  --
+  padre_id : varchar
+  cuidador_id : varchar
+  estado : varchar <<enum EstadoSolicitud>>
+  tipo : varchar <<enum TipoAsistencia>>
+  fecha : date
+  hora_inicio : time
+  duracion_horas : integer
+  descripcion : varchar
+  .. Horario @Embedded ..
+  fecha_inicio : timestamp
+  fecha_fin : timestamp
+}
+
+entity "calificaciones" as calificaciones {
+  * id : varchar <<PK>>
+  --
+  solicitud_id : varchar
+  autor_id : varchar
+  cuidador_id : varchar
+  * puntuacion : integer
+  comentario : varchar
+  fecha : timestamp
+}
+
+entity "notificaciones" as notificaciones {
+  * id : varchar <<PK>>
+  --
+  usuario_id : varchar
+  titulo : varchar
+  mensaje : varchar
+  tipo : varchar
+  leida : boolean
+  silenciada : boolean
+  disparada : boolean
+  fecha_creacion : timestamp
+  fecha_programada : timestamp
+}
+
+' ===================== RELACIONES =====================
+
+' --- FK REALES (Hibernate las crea para @ElementCollection) ---
+usuarios ||--o{ habilidades  : "FK cuidador_id"
+usuarios ||--o{ chorarios    : "FK cuidador_id"
+usuarios ||--o{ psolic       : "FK padre_id"
+
+' --- RELACIONES LOGICAS (String IDs, SIN constraint FK) ---
+usuarios     ..o{ solicitudes    : "padre_id / cuidador_id"
+solicitudes  ..o| calificaciones : "solicitud_id"
+usuarios     ..o{ calificaciones : "cuidador_id / autor_id"
+usuarios     ..o{ notificaciones : "usuario_id"
+
+legend right
+  |= Linea |= Significado |
+  | ---- | FK real (constraint en BD) |
+  | .... | Relacion logica (String id, sin FK) |
+endlegend
+
+@enduml

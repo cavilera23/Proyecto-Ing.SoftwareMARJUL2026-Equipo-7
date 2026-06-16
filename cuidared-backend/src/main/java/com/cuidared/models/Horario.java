@@ -1,8 +1,10 @@
 package com.cuidared.models;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.persistence.Embeddable;
 import java.time.LocalDateTime;
 
+@Embeddable
 public class Horario {
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
