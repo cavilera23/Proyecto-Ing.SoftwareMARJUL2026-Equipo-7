@@ -1,6 +1,7 @@
 package com.cuidared.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import jakarta.persistence.Column;
@@ -40,6 +41,11 @@ public abstract class Usuario {
     private String correo;
     private String telefono;
     private double calificacionPromedio;
+
+    // Se recibe al registrar/login (WRITE_ONLY) pero NUNCA se serializa de vuelta
+    // al cliente. Guardada en texto plano por decisión del proyecto académico.
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private String contrasena;
 
     public Usuario() {
         this.id = UUID.randomUUID().toString();
@@ -100,5 +106,13 @@ public abstract class Usuario {
 
     public void setCalificacionPromedio(double calificacionPromedio) {
         this.calificacionPromedio = calificacionPromedio;
+    }
+
+    public String getContrasena() {
+        return contrasena;
+    }
+
+    public void setContrasena(String contrasena) {
+        this.contrasena = contrasena;
     }
 }

@@ -14,8 +14,8 @@
           <RouterLink to="/perfil" class="btn-primary"
             >Registrarme ahora</RouterLink
           >
-          <RouterLink to="/solicitudes" class="btn-secondary"
-            >Buscar Cuidado</RouterLink
+          <RouterLink to="/login" class="btn-secondary"
+            >Iniciar sesión</RouterLink
           >
         </div>
       </div>

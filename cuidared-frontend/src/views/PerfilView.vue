@@ -1,11 +1,14 @@
 <script setup>
 import { ref } from "vue";
+import { useRouter } from "vue-router";
 
 import {
   showSuccessAlert,
   showErrorAlert,
   showWarningAlert,
 } from "@/components/modals/alerts";
+
+const router = useRouter();
 
 const API_URL = "http://localhost:8080";
 
@@ -15,6 +18,7 @@ const formData = ref({
   nombre: "",
   correo: "",
   telefono: "",
+  contrasena: "",
 
   // Campos exclusivos del cuidador
   tarifaHora: 0,
@@ -59,6 +63,7 @@ const limpiarFormulario = () => {
     nombre: "",
     correo: "",
     telefono: "",
+    contrasena: "",
     tarifaHora: 0,
     habilidades: [],
     rutaDocumentoAntecedentes: "",
@@ -90,6 +95,14 @@ const registrarPerfil = async () => {
     await showWarningAlert(
       "Teléfono requerido",
       "Debes ingresar un número de teléfono.",
+    );
+    return;
+  }
+
+  if (!formData.value.contrasena || formData.value.contrasena.length < 4) {
+    await showWarningAlert(
+      "Contraseña requerida",
+      "Debes ingresar una contraseña de al menos 4 caracteres.",
     );
     return;
   }
@@ -150,10 +163,12 @@ const registrarPerfil = async () => {
 
     await showSuccessAlert(
       "Registro exitoso",
-      `Bienvenido al ecosistema CuidaRed, ${data.nombre}.`,
+      `Bienvenido al ecosistema CuidaRed, ${data.nombre}. Ya puedes iniciar sesión.`,
     );
 
     limpiarFormulario();
+    // Tras registrarse, lo llevamos al login para que entre con su correo y clave.
+    router.push("/login");
   } catch (error) {
     console.error("Error al registrar:", error);
 
@@ -209,6 +224,17 @@ const registrarPerfil = async () => {
           type="text"
           v-model="formData.telefono"
           placeholder="Ej: +584121234567"
+          required
+        />
+      </div>
+
+      <div class="campo">
+        <label>Contraseña:</label>
+        <input
+          type="password"
+          v-model="formData.contrasena"
+          placeholder="Mínimo 4 caracteres"
+          autocomplete="new-password"
           required
         />
       </div>
