@@ -43,6 +43,13 @@ export const auth = {
     persistir();
   },
 
+  // Refresca los datos del usuario en sesión (p. ej. tras editar el perfil),
+  // manteniendo el mismo token.
+  actualizarUsuario(usuario) {
+    estado.usuario = usuario;
+    persistir();
+  },
+
   cerrarSesion() {
     estado.token = null;
     estado.usuario = null;

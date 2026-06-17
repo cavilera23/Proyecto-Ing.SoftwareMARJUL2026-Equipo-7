@@ -36,7 +36,7 @@ const cerrarSesion = () => {
 
         <div class="auth-acciones">
           <RouterLink to="/login" class="btn-auth-secundario">Iniciar sesión</RouterLink>
-          <RouterLink to="/perfil" class="btn-auth-primario">Registrarse</RouterLink>
+          <RouterLink to="/registro" class="btn-auth-primario">Registrarse</RouterLink>
         </div>
       </div>
     </header>

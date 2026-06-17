@@ -1,97 +1,92 @@
 <script setup>
-import { ref } from "vue";
+import { ref, reactive, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 
+import { auth } from "@/stores/auth";
+import {
+  obtenerMiPerfilApi,
+  modificarMiPerfilApi,
+  eliminarMiPerfilApi,
+} from "@/services/perfilService";
 import {
   showSuccessAlert,
   showErrorAlert,
   showWarningAlert,
+  showConfirmAlert,
 } from "@/components/modals/alerts";
 
 const router = useRouter();
 
-const API_URL = "http://localhost:8080";
+// Etiquetas legibles para las habilidades del cuidador.
+const HABILIDADES_DISPONIBLES = [
+  { valor: "NINO", etiqueta: "Niños" },
+  { valor: "ADULTO_MAYOR", etiqueta: "Adultos Mayores" },
+  { valor: "MASCOTA", etiqueta: "Mascotas" },
+];
 
-// Estado del formulario
-const formData = ref({
-  tipoUsuario: "PADRE",
+const etiquetaHabilidad = (valor) =>
+  HABILIDADES_DISPONIBLES.find((h) => h.valor === valor)?.etiqueta || valor;
+
+const perfil = ref(null);
+const cargando = ref(true);
+const guardando = ref(false);
+const eliminando = ref(false);
+const error = ref("");
+const editando = ref(false);
+
+const esCuidador = computed(() => perfil.value?.tipoUsuario === "CUIDADOR");
+
+// Borrador editable independiente del perfil cargado, para poder cancelar cambios.
+const formulario = reactive({
   nombre: "",
   correo: "",
   telefono: "",
-  contrasena: "",
-
-  // Campos exclusivos del cuidador
   tarifaHora: 0,
   habilidades: [],
-  rutaDocumentoAntecedentes: "",
 });
 
-const mensaje = ref("");
-const tipoMensaje = ref("");
-const cargando = ref(false);
-
-// Manejo del archivo simulado para cumplir con PDF/JPG/PNG
-const handleFileUpload = (event) => {
-  const file = event.target.files[0];
-
-  if (!file) {
-    formData.value.rutaDocumentoAntecedentes = "";
-    return;
+const cargarPerfil = async () => {
+  cargando.value = true;
+  error.value = "";
+  try {
+    perfil.value = await obtenerMiPerfilApi();
+  } catch (e) {
+    error.value =
+      "No se pudo cargar tu perfil. Inténtalo de nuevo más tarde.";
+    console.error("Error al cargar el perfil:", e);
+  } finally {
+    cargando.value = false;
   }
-
-  const tiposPermitidos = ["application/pdf", "image/jpeg", "image/png"];
-
-  if (!tiposPermitidos.includes(file.type)) {
-    formData.value.rutaDocumentoAntecedentes = "";
-
-    showWarningAlert(
-      "Archivo no válido",
-      "El documento de antecedentes debe ser PDF, JPG o PNG.",
-    );
-
-    event.target.value = "";
-    return;
-  }
-
-  // Como estamos guardando en JSON, solo enviamos el nombre del archivo
-  formData.value.rutaDocumentoAntecedentes = file.name;
 };
 
-const limpiarFormulario = () => {
-  formData.value = {
-    tipoUsuario: "PADRE",
-    nombre: "",
-    correo: "",
-    telefono: "",
-    contrasena: "",
-    tarifaHora: 0,
-    habilidades: [],
-    rutaDocumentoAntecedentes: "",
-  };
+const iniciarEdicion = () => {
+  formulario.nombre = perfil.value.nombre || "";
+  formulario.correo = perfil.value.correo || "";
+  formulario.telefono = perfil.value.telefono || "";
+  formulario.tarifaHora = perfil.value.tarifaHora || 0;
+  formulario.habilidades = Array.isArray(perfil.value.habilidades)
+    ? [...perfil.value.habilidades]
+    : [];
+  editando.value = true;
 };
 
-// Función para enviar los datos al backend
-const registrarPerfil = async () => {
-  mensaje.value = "";
-  tipoMensaje.value = "";
+const cancelarEdicion = () => {
+  editando.value = false;
+};
 
-  if (!formData.value.nombre.trim()) {
-    await showWarningAlert(
-      "Nombre requerido",
-      "Debes ingresar tu nombre completo.",
-    );
+const guardarCambios = async () => {
+  if (!formulario.nombre.trim()) {
+    await showWarningAlert("Nombre requerido", "Debes ingresar tu nombre.");
     return;
   }
-
-  if (!formData.value.correo.trim()) {
+  if (!formulario.correo.trim()) {
     await showWarningAlert(
       "Correo requerido",
       "Debes ingresar un correo electrónico.",
     );
     return;
   }
-
-  if (!formData.value.telefono.trim()) {
+  if (!formulario.telefono.trim()) {
     await showWarningAlert(
       "Teléfono requerido",
       "Debes ingresar un número de teléfono.",
@@ -99,221 +94,239 @@ const registrarPerfil = async () => {
     return;
   }
 
-  if (!formData.value.contrasena || formData.value.contrasena.length < 4) {
-    await showWarningAlert(
-      "Contraseña requerida",
-      "Debes ingresar una contraseña de al menos 4 caracteres.",
-    );
-    return;
-  }
+  // Solo enviamos los campos editables; el backend resuelve el usuario por el token.
+  const cambios = {
+    tipoUsuario: perfil.value.tipoUsuario,
+    nombre: formulario.nombre.trim(),
+    correo: formulario.correo.trim(),
+    telefono: formulario.telefono.trim(),
+  };
 
-  if (formData.value.tipoUsuario === "CUIDADOR") {
-    if (Number(formData.value.tarifaHora) <= 0) {
+  if (esCuidador.value) {
+    if (Number(formulario.tarifaHora) <= 0) {
       await showWarningAlert(
         "Tarifa inválida",
         "La tarifa por hora debe ser mayor a 0.",
       );
       return;
     }
-
-    if (formData.value.habilidades.length === 0) {
+    if (formulario.habilidades.length === 0) {
       await showWarningAlert(
         "Habilidades requeridas",
         "Debes seleccionar al menos una habilidad de cuidado.",
       );
       return;
     }
-
-    if (!formData.value.rutaDocumentoAntecedentes) {
-      await showWarningAlert(
-        "Documento requerido",
-        "Debes cargar tu documento de antecedentes en formato PDF, JPG o PNG.",
-      );
-      return;
-    }
+    cambios.tarifaHora = Number(formulario.tarifaHora);
+    cambios.habilidades = [...formulario.habilidades];
   }
 
-  cargando.value = true;
-
-  const payload = {
-    ...formData.value,
-    tarifaHora: Number(formData.value.tarifaHora),
-  };
-
-  console.log("Enviando perfil al backend:", payload);
-
+  guardando.value = true;
   try {
-    const respuesta = await fetch(`${API_URL}/api/v1/perfiles`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!respuesta.ok) {
-      const errorTexto = await respuesta.text();
-      throw new Error(errorTexto || "Error en las validaciones del registro.");
-    }
-
-    const data = await respuesta.json();
-
-    mensaje.value = `¡Registro exitoso! Bienvenido al ecosistema CuidaRed, ${data.nombre}.`;
-    tipoMensaje.value = "exito";
-
+    const actualizado = await modificarMiPerfilApi(cambios);
+    perfil.value = actualizado;
+    // Mantenemos el nombre/rol que muestra el navbar en sincronía con la sesión.
+    auth.actualizarUsuario(actualizado);
+    editando.value = false;
     await showSuccessAlert(
-      "Registro exitoso",
-      `Bienvenido al ecosistema CuidaRed, ${data.nombre}. Ya puedes iniciar sesión.`,
+      "Perfil actualizado",
+      "Tus datos se guardaron correctamente.",
     );
-
-    limpiarFormulario();
-    // Tras registrarse, lo llevamos al login para que entre con su correo y clave.
-    router.push("/login");
-  } catch (error) {
-    console.error("Error al registrar:", error);
-
-    mensaje.value = error.message;
-    tipoMensaje.value = "error";
-
-    await showErrorAlert("No se pudo completar el registro", error.message);
+  } catch (e) {
+    let msg = "No se pudieron guardar los cambios.";
+    try {
+      msg = JSON.parse(e.message).error || msg;
+    } catch {
+      /* el cuerpo no era JSON; dejamos el mensaje genérico */
+    }
+    await showErrorAlert("Error al guardar", msg);
   } finally {
-    cargando.value = false;
+    guardando.value = false;
   }
 };
+
+const eliminarPerfil = async () => {
+  const { isConfirmed } = await showConfirmAlert(
+    "Eliminar perfil",
+    "Esta acción es permanente y cerrará tu sesión. ¿Deseas continuar?",
+  );
+  if (!isConfirmed) return;
+
+  eliminando.value = true;
+  try {
+    await eliminarMiPerfilApi();
+    auth.cerrarSesion();
+    await showSuccessAlert(
+      "Perfil eliminado",
+      "Tu perfil se eliminó correctamente.",
+    );
+    router.push("/login");
+  } catch (e) {
+    let msg = "No se pudo eliminar el perfil.";
+    try {
+      msg = JSON.parse(e.message).error || msg;
+    } catch {
+      /* el cuerpo no era JSON; dejamos el mensaje genérico */
+    }
+    await showErrorAlert("Error al eliminar", msg);
+  } finally {
+    eliminando.value = false;
+  }
+};
+
+onMounted(cargarPerfil);
 </script>
 
 <template>
   <div class="perfil-view">
     <div class="header-section">
-      <h1>Completar Perfil</h1>
-      <p>Regístrate en la comunidad para solicitar u ofrecer asistencia.</p>
+      <h1>Mi Perfil</h1>
+      <p>Consulta, actualiza o elimina la información de tu cuenta.</p>
     </div>
 
-    <form @submit.prevent="registrarPerfil" class="formulario">
-      <div class="campo">
-        <label>Quiero registrarme como:</label>
-        <select v-model="formData.tipoUsuario" required>
-          <option value="PADRE">Padre / Tutor (Buscar Cuidador)</option>
-          <option value="CUIDADOR">Cuidador (Ofrecer Asistencia)</option>
-        </select>
-      </div>
+    <div v-if="cargando" class="estado">Cargando tu perfil…</div>
 
-      <div class="campo">
-        <label>Nombre Completo:</label>
-        <input
-          type="text"
-          v-model="formData.nombre"
-          placeholder="Ej: Mauricio Caldera"
-          required
-        />
-      </div>
+    <div v-else-if="error" class="mensaje mensaje-error">
+      {{ error }}
+      <button class="btn-secundario" @click="cargarPerfil">Reintentar</button>
+    </div>
 
-      <div class="campo">
-        <label>Correo Electrónico:</label>
-        <input
-          type="email"
-          v-model="formData.correo"
-          placeholder="Ej: correo@gmail.com"
-          required
-        />
-      </div>
+    <div v-else-if="perfil" class="tarjeta">
+      <!-- MODO LECTURA -->
+      <template v-if="!editando">
+        <div class="rol-badge">
+          {{ esCuidador ? "Cuidador" : "Padre / Tutor" }}
+        </div>
 
-      <div class="campo">
-        <label>Teléfono:</label>
-        <input
-          type="text"
-          v-model="formData.telefono"
-          placeholder="Ej: +584121234567"
-          required
-        />
-      </div>
+        <div class="dato">
+          <span class="etiqueta">Nombre</span>
+          <span class="valor">{{ perfil.nombre }}</span>
+        </div>
 
-      <div class="campo">
-        <label>Contraseña:</label>
-        <input
-          type="password"
-          v-model="formData.contrasena"
-          placeholder="Mínimo 4 caracteres"
-          autocomplete="new-password"
-          required
-        />
-      </div>
+        <div class="dato">
+          <span class="etiqueta">Correo</span>
+          <span class="valor">{{ perfil.correo }}</span>
+        </div>
 
-      <div v-if="formData.tipoUsuario === 'CUIDADOR'" class="seccion-cuidador">
-        <h3>Datos de Cuidador</h3>
+        <div class="dato">
+          <span class="etiqueta">Teléfono</span>
+          <span class="valor">{{ perfil.telefono }}</span>
+        </div>
 
+        <div class="dato">
+          <span class="etiqueta">Calificación promedio</span>
+          <span class="valor"
+            >⭐ {{ (perfil.calificacionPromedio ?? 0).toFixed(1) }}</span
+          >
+        </div>
+
+        <template v-if="esCuidador">
+          <div class="dato">
+            <span class="etiqueta">Tarifa por hora</span>
+            <span class="valor">${{ perfil.tarifaHora }}</span>
+          </div>
+
+          <div class="dato">
+            <span class="etiqueta">Disponible</span>
+            <span class="valor">{{ perfil.disponible ? "Sí" : "No" }}</span>
+          </div>
+
+          <div class="dato">
+            <span class="etiqueta">Habilidades</span>
+            <span class="valor">
+              <span
+                v-for="h in perfil.habilidades"
+                :key="h"
+                class="chip"
+                >{{ etiquetaHabilidad(h) }}</span
+              >
+              <span v-if="!perfil.habilidades?.length">—</span>
+            </span>
+          </div>
+
+          <div class="dato" v-if="perfil.rutaDocumentoAntecedentes">
+            <span class="etiqueta">Documento de antecedentes</span>
+            <span class="valor">{{ perfil.rutaDocumentoAntecedentes }}</span>
+          </div>
+        </template>
+
+        <div class="acciones">
+          <button class="btn-primario" @click="iniciarEdicion">
+            Editar perfil
+          </button>
+          <button
+            class="btn-peligro"
+            :disabled="eliminando"
+            @click="eliminarPerfil"
+          >
+            {{ eliminando ? "Eliminando…" : "Eliminar perfil" }}
+          </button>
+        </div>
+      </template>
+
+      <!-- MODO EDICIÓN -->
+      <form v-else class="formulario" @submit.prevent="guardarCambios">
         <div class="campo">
-          <label>Tarifa por hora ($):</label>
-          <input
-            type="number"
-            v-model="formData.tarifaHora"
-            min="0"
-            step="0.01"
-            required
-          />
+          <label>Nombre Completo</label>
+          <input type="text" v-model="formulario.nombre" required />
         </div>
 
         <div class="campo">
-          <label>Habilidades de Cuidado:</label>
+          <label>Correo Electrónico</label>
+          <input type="email" v-model="formulario.correo" required />
+        </div>
 
-          <div class="checkbox-group">
-            <label class="checkbox-item">
-              <input
-                type="checkbox"
-                value="NINO"
-                v-model="formData.habilidades"
-              />
-              Niños
-            </label>
+        <div class="campo">
+          <label>Teléfono</label>
+          <input type="text" v-model="formulario.telefono" required />
+        </div>
 
-            <label class="checkbox-item">
-              <input
-                type="checkbox"
-                value="ADULTO_MAYOR"
-                v-model="formData.habilidades"
-              />
-              Adultos Mayores
-            </label>
+        <div v-if="esCuidador" class="seccion-cuidador">
+          <h3>Datos de Cuidador</h3>
 
-            <label class="checkbox-item">
-              <input
-                type="checkbox"
-                value="MASCOTA"
-                v-model="formData.habilidades"
-              />
-              Mascotas
-            </label>
+          <div class="campo">
+            <label>Tarifa por hora ($)</label>
+            <input
+              type="number"
+              v-model="formulario.tarifaHora"
+              min="0"
+              step="0.01"
+            />
+          </div>
+
+          <div class="campo">
+            <label>Habilidades de Cuidado</label>
+            <div class="checkbox-group">
+              <label
+                v-for="h in HABILIDADES_DISPONIBLES"
+                :key="h.valor"
+                class="checkbox-item"
+              >
+                <input
+                  type="checkbox"
+                  :value="h.valor"
+                  v-model="formulario.habilidades"
+                />
+                {{ h.etiqueta }}
+              </label>
+            </div>
           </div>
         </div>
 
-        <div class="campo">
-          <label>Documento de Antecedentes (PDF, JPG, PNG):</label>
-          <input
-            type="file"
-            accept=".pdf,.jpg,.jpeg,.png"
-            @change="handleFileUpload"
-            required
-          />
-
-          <small v-if="formData.rutaDocumentoAntecedentes">
-            Archivo seleccionado: {{ formData.rutaDocumentoAntecedentes }}
-          </small>
+        <div class="acciones">
+          <button class="btn-primario" type="submit" :disabled="guardando">
+            {{ guardando ? "Guardando…" : "Guardar cambios" }}
+          </button>
+          <button
+            class="btn-secundario"
+            type="button"
+            :disabled="guardando"
+            @click="cancelarEdicion"
+          >
+            Cancelar
+          </button>
         </div>
-      </div>
-
-      <button type="submit" :disabled="cargando">
-        {{ cargando ? "Registrando..." : "Registrar Perfil" }}
-      </button>
-    </form>
-
-    <div
-      v-if="mensaje"
-      :class="[
-        'mensaje',
-        tipoMensaje === 'error' ? 'mensaje-error' : 'mensaje-exito',
-      ]"
-    >
-      {{ mensaje }}
+      </form>
     </div>
   </div>
 </template>
@@ -339,7 +352,12 @@ const registrarPerfil = async () => {
   line-height: 1.5;
 }
 
-.formulario {
+.estado {
+  color: var(--color-text);
+  padding: 16px 0;
+}
+
+.tarjeta {
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -347,6 +365,58 @@ const registrarPerfil = async () => {
   border: 1px solid var(--color-border);
   padding: 24px;
   border-radius: 12px;
+}
+
+.rol-badge {
+  align-self: flex-start;
+  background-color: rgba(16, 185, 129, 0.15);
+  color: var(--color-primary);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 999px;
+  padding: 4px 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.dato {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 12px;
+}
+
+.dato:last-of-type {
+  border-bottom: none;
+}
+
+.etiqueta {
+  color: var(--color-text);
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.valor {
+  color: var(--color-heading);
+  font-size: 16px;
+  font-weight: 500;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 2px 10px;
+  font-size: 13px;
+}
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .campo {
@@ -359,12 +429,6 @@ const registrarPerfil = async () => {
   color: var(--color-text);
   font-size: 14px;
   font-weight: 500;
-}
-
-.campo small {
-  color: var(--color-text);
-  opacity: 0.85;
-  font-size: 12px;
 }
 
 .seccion-cuidador {
@@ -396,8 +460,7 @@ const registrarPerfil = async () => {
   font-size: 14px;
 }
 
-input,
-select {
+input {
   padding: 10px;
   border-radius: 6px;
   border: 1px solid var(--color-border);
@@ -405,14 +468,15 @@ select {
   color: var(--color-heading);
 }
 
-input[type="file"] {
-  padding: 8px;
+.acciones {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 8px;
 }
 
 button {
-  padding: 12px;
-  background-color: var(--color-primary);
-  color: white;
+  padding: 12px 18px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -422,27 +486,49 @@ button {
     opacity 0.2s ease;
 }
 
-button:hover {
-  background-color: var(--color-primary-hover);
-}
-
 button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
 
+.btn-primario {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.btn-primario:hover:not(:disabled) {
+  background-color: var(--color-primary-hover);
+}
+
+.btn-secundario {
+  background-color: transparent;
+  color: var(--color-heading);
+  border: 1px solid var(--color-border);
+}
+
+.btn-secundario:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.btn-peligro {
+  background-color: transparent;
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.btn-peligro:hover:not(:disabled) {
+  background-color: rgba(239, 68, 68, 0.12);
+}
+
 .mensaje {
-  margin-top: 18px;
   padding: 12px;
   border-radius: 6px;
   font-weight: 600;
   font-size: 14px;
-}
-
-.mensaje-exito {
-  background-color: rgba(16, 185, 129, 0.15);
-  color: var(--color-primary);
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .mensaje-error {
@@ -456,7 +542,7 @@ button:disabled {
     padding: 12px;
   }
 
-  .formulario {
+  .tarjeta {
     padding: 18px;
   }
 

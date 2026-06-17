@@ -6,17 +6,6 @@
       <p>Publica una solicitud de cuidado y encuentra al cuidador ideal.</p>
     </div>
 
-    <div class="id-section">
-      <label>Mi ID de Padre:</label>
-      <input
-        type="text"
-        v-model="padreId"
-        placeholder="Pega aquí el ID que recibiste al crear tu perfil"
-        class="input-id"
-      />
-      <small v-if="!padreId">Necesitas tu ID para ver y publicar solicitudes</small>
-    </div>
-
     <div class="grid-layout">
       <!-- Formulario de publicación -->
       <div class="form-card">
@@ -75,6 +64,7 @@
             </div>
             <div class="solicitud-detalle">
               <span>📅 {{ sol.fecha }} {{ sol.horaInicio }} ({{ sol.duracionHoras }}h)</span>
+              <span v-if="sol.padreNombre" class="creador">👤 Creada por: {{ sol.padreNombre }}</span>
               <p v-if="sol.descripcion" class="descripcion">{{ sol.descripcion }}</p>
             </div>
           </li>
@@ -90,9 +80,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { listarSolicitudesApi, crearSolicitudApi } from '../services/solicitudService'
 import { showSuccessAlert, showErrorAlert, showWarningAlert } from '@/components/modals/alerts'
+import { auth } from '@/stores/auth'
 
 // Estado
 const form = ref({
@@ -107,13 +98,6 @@ const solicitudes = ref([])
 const cargando = ref(false)
 const mensaje = ref('')
 const tipoMensaje = ref('')
-
-const padreId = ref(localStorage.getItem('padreId') || '')
-
-watch(padreId, (nuevoId) => {
-  localStorage.setItem('padreId', nuevoId)
-  cargarSolicitudes()
-})
 
 const fechaMinima = computed(() => {
   const hoy = new Date()
@@ -149,8 +133,8 @@ const getEstadoClass = (estado) => {
 const cargarSolicitudes = async () => {
   try {
     const todas = await listarSolicitudesApi()
-    // Filtrar solo las del padre actual
-    solicitudes.value = todas.filter(s => s.padreId === padreId.value)
+    // Filtrar solo las del usuario en sesión (su id viene del token).
+    solicitudes.value = todas.filter(s => s.padreId === auth.usuario?.id)
   } catch (error) {
     console.error("Error cargando solicitudes", error)
   }
@@ -203,13 +187,9 @@ const publicarSolicitud = async () => {
   const minutosTotales = h * 60 + m + (form.value.duracionHoras * 60)
   const horaFin = `${String(Math.floor(minutosTotales / 60)).padStart(2, '0')}:${String(minutosTotales % 60).padStart(2, '0')}`
 
-  if (!padreId.value.trim()) {
-    await showWarningAlert("ID requerido", "Debes ingresar tu ID de padre antes de publicar una solicitud")
-    return
-  }
-
+  // El padre que crea la solicitud lo determina el backend a partir del token;
+  // el frontend ya no envía ningún id manualmente.
   const payload = {
-    padreId: padreId.value,
     tipo: form.value.tipo,
     descripcion: form.value.descripcion,
     fecha: form.value.fecha,
@@ -300,35 +280,6 @@ onMounted(() => {
 
 .header-section p {
   color: var(--color-text);
-}
-
-.id-section {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-}
-
-.id-section label {
-  font-weight: 600;
-  color: var(--color-text);
-  white-space: nowrap;
-}
-
-.id-section small {
-  color: #f59e0b;
-  font-size: 12px;
-}
-
-.input-id {
-  flex: 1;
-  min-width: 260px;
-  padding: 10px;
-  border-radius: 6px;
-  border: 1px solid var(--color-border);
-  background-color: var(--color-background);
-  color: var(--color-heading);
 }
 
 .grid-layout {
@@ -449,6 +400,14 @@ button:disabled {
 .solicitud-detalle {
   font-size: 13px;
   color: var(--color-text);
+}
+
+.creador {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-heading);
 }
 
 .descripcion {

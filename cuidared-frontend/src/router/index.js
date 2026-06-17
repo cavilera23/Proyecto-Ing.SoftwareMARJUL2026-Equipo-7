@@ -8,6 +8,7 @@ import DashboardPadreView from "../views/DashboardPadreView.vue";
 import AgendaView from "../views/AgendaView.vue";
 import SolicitudesView from "../views/SolicitudesView.vue";
 import PerfilView from "../views/PerfilView.vue";
+import RegistroView from "../views/RegistroView.vue";
 import MisCalificacionesView from "../views/MisCalificacionesView.vue";
 import NotificacionesView from "../views/NotificacionesView.vue";
 import BuscarCuidadoresView from "../views/BuscarCuidadoresView.vue";
@@ -20,7 +21,8 @@ const router = createRouter({
 
     // Públicas (no requieren sesión)
     { path: "/login", name: "login", component: LoginView, meta: { publica: true } },
-    { path: "/perfil", name: "perfil", component: PerfilView, meta: { publica: true } },
+    // Registro de una cuenta nueva (público).
+    { path: "/registro", name: "registro", component: RegistroView, meta: { publica: true } },
 
     // Dashboards por rol
     {
@@ -48,6 +50,8 @@ const router = createRouter({
     },
 
     // Acciones de ambos roles
+    // Perfil propio: requiere sesión (ver/editar/eliminar la cuenta del token).
+    { path: "/perfil", name: "perfil", component: PerfilView, meta: { roles: ["CUIDADOR", "PADRE"] } },
     { path: "/solicitudes", name: "solicitudes", component: SolicitudesView, meta: { roles: ["CUIDADOR", "PADRE"] } },
     { path: "/mis-calificaciones", name: "mis-calificaciones", component: MisCalificacionesView, meta: { roles: ["CUIDADOR", "PADRE"] } },
     { path: "/notificaciones", name: "notificaciones", component: NotificacionesView, meta: { roles: ["CUIDADOR", "PADRE"] } },

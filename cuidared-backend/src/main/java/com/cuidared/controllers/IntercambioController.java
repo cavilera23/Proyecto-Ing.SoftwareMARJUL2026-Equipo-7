@@ -2,6 +2,7 @@ package com.cuidared.controllers;
 
 import com.cuidared.models.Solicitud;
 import com.cuidared.services.SolicitudService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +28,12 @@ public class IntercambioController {
     }
 
     @PostMapping("/solicitudes")
-    public ResponseEntity<?> crearSolicitud(@RequestBody Solicitud solicitud) {
+    public ResponseEntity<?> crearSolicitud(HttpServletRequest request, @RequestBody Solicitud solicitud) {
+        // El padre que crea la solicitud se toma del token de la sesión (lo pone
+        // JwtAuthFilter), no de lo que envíe el cliente: así queda asociada a quien
+        // realmente está autenticado y no se puede falsear el id.
+        String padreId = (String) request.getAttribute("usuarioId");
+        solicitud.setPadreId(padreId);
         try {
             Solicitud nueva = solicitudService.crearSolicitud(solicitud);
             return new ResponseEntity<>(nueva, HttpStatus.CREATED);

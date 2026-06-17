@@ -96,6 +96,8 @@ public class SolicitudService {
         
         // 8. Guardar solicitud
         solicitud.setEstado(EstadoSolicitud.PENDIENTE);
+        // Guardamos el nombre del creador para poder mostrar luego quién la creó.
+        solicitud.setPadreNombre(padre.getNombre());
         Solicitud guardada = solicitudRepository.save(solicitud);
         padre.addSolicitudId(guardada.getId());
         usuarioRepository.save(padre);

@@ -24,6 +24,9 @@ public class Solicitud {
     @Id
     private String id;
     private String padreId;
+    // Nombre del padre que creó la solicitud (denormalizado al crearla),
+    // para mostrar "quién la creó" sin tener que volver a consultar el usuario.
+    private String padreNombre;
     private String cuidadorId;
 
     @Enumerated(EnumType.STRING)
@@ -65,6 +68,14 @@ public class Solicitud {
 
     public void setPadreId(String padreId) {
         this.padreId = padreId;
+    }
+
+    public String getPadreNombre() {
+        return padreNombre;
+    }
+
+    public void setPadreNombre(String padreNombre) {
+        this.padreNombre = padreNombre;
     }
 
     public String getCuidadorId() {

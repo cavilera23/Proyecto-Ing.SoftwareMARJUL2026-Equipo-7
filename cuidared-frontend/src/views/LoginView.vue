@@ -90,7 +90,7 @@ const iniciarSesion = async () => {
 
       <p class="registro-link">
         ¿No tienes cuenta?
-        <RouterLink to="/perfil">Regístrate aquí</RouterLink>
+        <RouterLink to="/registro">Regístrate aquí</RouterLink>
       </p>
     </div>
   </div>

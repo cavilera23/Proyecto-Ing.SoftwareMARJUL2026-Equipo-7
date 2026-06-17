@@ -11,7 +11,7 @@
           verificados para niños, adultos mayores y mascotas.
         </p>
         <div class="cta-group">
-          <RouterLink to="/perfil" class="btn-primary"
+          <RouterLink to="/registro" class="btn-primary"
             >Registrarme ahora</RouterLink
           >
           <RouterLink to="/login" class="btn-secondary"

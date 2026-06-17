@@ -74,6 +74,16 @@ public class UsuarioService {
             existente.setTelefono(cambios.getTelefono());
         }
 
+        // Campos propios del cuidador: tarifa por hora y habilidades.
+        if (existente instanceof Cuidador cuidadorExistente && cambios instanceof Cuidador cuidadorCambios) {
+            if (cuidadorCambios.getTarifaHora() > 0) {
+                cuidadorExistente.setTarifaHora(cuidadorCambios.getTarifaHora());
+            }
+            if (cuidadorCambios.getHabilidades() != null && !cuidadorCambios.getHabilidades().isEmpty()) {
+                cuidadorExistente.setHabilidades(cuidadorCambios.getHabilidades());
+            }
+        }
+
         return usuarioRepository.save(existente);
     }
 
