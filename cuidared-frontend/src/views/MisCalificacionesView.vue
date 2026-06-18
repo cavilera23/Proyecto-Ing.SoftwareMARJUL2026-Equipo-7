@@ -1,90 +1,187 @@
 <template>
   <div class="mis-calificaciones-container">
-    <header class="dashboard-header">
-      <h1>Mis Solicitudes y Calificaciones</h1>
-      <p>Administra tus próximas citas y revisa el historial de atenciones pasadas.</p>
-    </header>
+    <!-- ====================== VISTA CUIDADOR ====================== -->
+    <template v-if="esCuidador">
+      <header class="dashboard-header">
+        <h1>Mis Calificaciones</h1>
+        <p>Estas son las valoraciones que tus clientes te han dado.</p>
+      </header>
 
-    <div class="tabs-container">
-      <div class="tabs">
-        <button 
-          :class="['tab-btn', { active: tabActiva === 'futuras' }]"
-          @click="tabActiva = 'futuras'"
-        >
-          📅 Próximas Citas
-        </button>
-        <button 
-          :class="['tab-btn', { active: tabActiva === 'historial' }]"
-          @click="tabActiva = 'historial'"
-        >
-          🕰️ Historial de Servicios
-        </button>
-      </div>
-    </div>
-
-    <div v-if="cargando" class="loading-state">
-      <div class="spinner"></div>
-      <p>Cargando información...</p>
-    </div>
-
-    <div v-else class="content-area">
-      <!-- Sección Próximas Citas -->
-      <div v-if="tabActiva === 'futuras'" class="tab-content">
-        <div v-if="solicitudesFuturas.length === 0" class="empty-state">
-          <p>No tienes citas programadas para el futuro.</p>
-        </div>
-        <div class="cards-grid">
-          <SolicitudCard 
-            v-for="solicitud in solicitudesFuturas" 
-            :key="solicitud.id" 
-            :solicitud="solicitud"
-            :esFutura="true"
-            @cancelar="handleCancelar"
-          />
-        </div>
+      <div v-if="cargando" class="loading-state">
+        <div class="spinner"></div>
+        <p>Cargando información...</p>
       </div>
 
-      <!-- Sección Historial -->
-      <div v-if="tabActiva === 'historial'" class="tab-content">
-        <div v-if="solicitudesHistorial.length === 0" class="empty-state">
-          <p>Aún no tienes atenciones pasadas en tu historial.</p>
+      <div v-else class="content-area">
+        <div class="resumen-cuidador">
+          <div class="promedio-grande">
+            <span class="estrella-grande">⭐</span>
+            <span class="promedio-num">{{ promedioCuidador }}</span>
+          </div>
+          <p class="promedio-label">
+            Promedio sobre {{ calificacionesRecibidas.length }}
+            {{ calificacionesRecibidas.length === 1 ? 'valoración' : 'valoraciones' }}
+          </p>
         </div>
-        <div class="cards-grid">
-          <SolicitudCard 
-            v-for="solicitud in solicitudesHistorial" 
-            :key="solicitud.id" 
-            :solicitud="solicitud"
-            :esHistorial="true"
-            @calificar="handleCalificar"
-          />
+
+        <div v-if="calificacionesRecibidas.length === 0" class="empty-state">
+          <p>Aún no has recibido calificaciones.</p>
+        </div>
+        <div v-else class="cards-grid">
+          <div v-for="cal in calificacionesRecibidas" :key="cal.id" class="calif-card">
+            <div class="calif-header">
+              <span class="estrellas">{{ renderEstrellas(cal.puntuacion) }}</span>
+              <span class="calif-fecha">{{ formatearFechaCal(cal.fecha) }}</span>
+            </div>
+            <p class="calif-comentario">
+              {{ cal.comentario || 'Sin comentario.' }}
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+    </template>
+
+    <!-- ====================== VISTA PADRE ====================== -->
+    <template v-else>
+      <header class="dashboard-header">
+        <h1>Mis Solicitudes y Calificaciones</h1>
+        <p>Administra tus próximas citas y revisa el historial de atenciones pasadas.</p>
+      </header>
+
+      <div class="tabs-container">
+        <div class="tabs">
+          <button
+            :class="['tab-btn', { active: tabActiva === 'futuras' }]"
+            @click="tabActiva = 'futuras'"
+          >
+            📅 Próximas Citas
+          </button>
+          <button
+            :class="['tab-btn', { active: tabActiva === 'historial' }]"
+            @click="tabActiva = 'historial'"
+          >
+            🕰️ Historial de Servicios
+          </button>
+        </div>
+      </div>
+
+      <div v-if="cargando" class="loading-state">
+        <div class="spinner"></div>
+        <p>Cargando información...</p>
+      </div>
+
+      <div v-else class="content-area">
+        <!-- Sección Próximas Citas -->
+        <div v-if="tabActiva === 'futuras'" class="tab-content">
+          <div v-if="solicitudesFuturas.length === 0" class="empty-state">
+            <p>No tienes citas programadas para el futuro.</p>
+          </div>
+          <div class="cards-grid">
+            <SolicitudCard
+              v-for="solicitud in solicitudesFuturas"
+              :key="solicitud.id"
+              :solicitud="solicitud"
+              :esFutura="true"
+              @cancelar="handleCancelar"
+            />
+          </div>
+        </div>
+
+        <!-- Sección Historial -->
+        <div v-if="tabActiva === 'historial'" class="tab-content">
+          <div v-if="solicitudesHistorial.length === 0" class="empty-state">
+            <p>Aún no tienes atenciones pasadas en tu historial.</p>
+          </div>
+          <div class="cards-grid">
+            <SolicitudCard
+              v-for="solicitud in solicitudesHistorial"
+              :key="solicitud.id"
+              :solicitud="solicitud"
+              :esHistorial="true"
+              @calificar="handleCalificar"
+            />
+          </div>
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import Swal from 'sweetalert2'
 import { apiFetch } from '../services/api'
-import { crearCalificacionApi } from '../services/calificacionService'
+import { crearCalificacionApi, listarCalificacionesPorCuidadorApi } from '../services/calificacionService'
+import { auth } from '@/stores/auth'
 import SolicitudCard from '../components/SolicitudCard.vue'
 
-// ID hardcoded según lo solicitado para pruebas visuales
-const PADRE_TEST_ID = 'test-padre-123' 
+const esCuidador = computed(() => auth.tipoUsuario === 'CUIDADOR')
 
+// --- Estado vista PADRE ---
 const solicitudesFuturas = ref([])
 const solicitudesHistorial = ref([])
-const cargando = ref(true)
 const tabActiva = ref('futuras') // 'futuras' o 'historial'
+
+// --- Estado vista CUIDADOR ---
+const calificacionesRecibidas = ref([])
+
+const cargando = ref(true)
+
+const promedioCuidador = computed(() => {
+  if (calificacionesRecibidas.value.length === 0) return '0.0'
+  const suma = calificacionesRecibidas.value.reduce((acc, c) => acc + c.puntuacion, 0)
+  return (suma / calificacionesRecibidas.value.length).toFixed(1)
+})
+
+const renderEstrellas = (puntuacion) => {
+  const llenas = '⭐'.repeat(puntuacion)
+  return llenas || '—'
+}
+
+const formatearFechaCal = (fecha) => {
+  if (!fecha) return ''
+  return new Date(fecha).toLocaleDateString('es-VE', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+const cargarCalificacionesCuidador = async () => {
+  cargando.value = true
+  try {
+    const data = await listarCalificacionesPorCuidadorApi(auth.usuario?.id)
+    // Más recientes primero
+    calificacionesRecibidas.value = (data || []).sort(
+      (a, b) => new Date(b.fecha) - new Date(a.fecha)
+    )
+  } catch (error) {
+    console.error('Error al cargar calificaciones:', error)
+    Swal.fire({
+      icon: 'error',
+      title: 'Oops...',
+      text: 'Hubo un problema al cargar tus calificaciones. ' + error.message,
+      background: '#ffffff',
+      color: '#5a6675'
+    })
+  } finally {
+    cargando.value = false
+  }
+}
 
 const cargarSolicitudes = async () => {
   cargando.value = true
   try {
-    const data = await apiFetch(`/intercambio/solicitudes/padre/${PADRE_TEST_ID}`)
+    // Traemos las solicitudes del padre y, en paralelo, todas las calificaciones
+    // para saber cuáles servicios ya fueron calificados (y mostrar la nota dejada).
+    const [data, calificaciones] = await Promise.all([
+      apiFetch(`/intercambio/solicitudes/padre/${auth.usuario?.id}`),
+      apiFetch('/calificaciones')
+    ])
+
+    const califPorSolicitud = {}
+    ;(calificaciones || []).forEach((c) => { califPorSolicitud[c.solicitudId] = c })
+    const anotar = (s) => ({ ...s, calificacion: califPorSolicitud[s.id] || null })
+
     if (data) {
-      solicitudesFuturas.value = data.futuras || []
-      solicitudesHistorial.value = data.historial || []
+      solicitudesFuturas.value = (data.futuras || []).map(anotar)
+      solicitudesHistorial.value = (data.historial || []).map(anotar)
     }
   } catch (error) {
     console.error('Error al cargar solicitudes:', error)
@@ -92,8 +189,8 @@ const cargarSolicitudes = async () => {
       icon: 'error',
       title: 'Oops...',
       text: 'Hubo un problema al cargar tus solicitudes. ' + error.message,
-      background: '#1f2937',
-      color: '#fff'
+      background: '#ffffff',
+      color: '#5a6675'
     })
   } finally {
     cargando.value = false
@@ -110,8 +207,8 @@ const handleCancelar = (id) => {
     cancelButtonColor: '#4b5563',
     confirmButtonText: 'Sí, cancelar',
     cancelButtonText: 'No, mantener',
-    background: '#1f2937',
-    color: '#fff'
+    background: '#ffffff',
+    color: '#5a6675'
   }).then((result) => {
     if (result.isConfirmed) {
       // Aquí iría la llamada al backend para cancelar:
@@ -120,8 +217,8 @@ const handleCancelar = (id) => {
         title: 'Cancelada',
         text: 'La cita ha sido cancelada exitosamente.',
         icon: 'success',
-        background: '#1f2937',
-        color: '#fff'
+        background: '#ffffff',
+        color: '#5a6675'
       })
       // Simular actualización
       solicitudesFuturas.value = solicitudesFuturas.value.filter(s => s.id !== id)
@@ -146,8 +243,9 @@ const handleCalificar = (id) => {
     showCancelButton: true,
     confirmButtonText: 'Enviar',
     cancelButtonText: 'Cancelar',
-    background: '#1f2937',
-    color: '#fff',
+    background: '#ffffff',
+    color: '#5a6675',
+    customClass: { popup: 'cr-swal', title: 'cr-swal-title', confirmButton: 'cr-swal-confirm', cancelButton: 'cr-swal-cancel' },
     preConfirm: () => {
       const puntuacion = document.getElementById('swal-puntuacion').value
       if (!puntuacion) {
@@ -171,8 +269,8 @@ const handleCalificar = (id) => {
           title: '¡Gracias!',
           text: `Has calificado este servicio con ${result.value.puntuacion} estrellas.`,
           icon: 'success',
-          background: '#1f2937',
-          color: '#fff'
+          background: '#ffffff',
+          color: '#5a6675'
         })
         // Recargar para reflejar el estado actualizado
         cargarSolicitudes()
@@ -181,8 +279,8 @@ const handleCalificar = (id) => {
           icon: 'error',
           title: 'No se pudo calificar',
           text: error.message,
-          background: '#1f2937',
-          color: '#fff'
+          background: '#ffffff',
+          color: '#5a6675'
         })
       }
     }
@@ -190,7 +288,11 @@ const handleCalificar = (id) => {
 }
 
 onMounted(() => {
-  cargarSolicitudes()
+  if (esCuidador.value) {
+    cargarCalificacionesCuidador()
+  } else {
+    cargarSolicitudes()
+  }
 })
 </script>
 
@@ -198,9 +300,8 @@ onMounted(() => {
 .mis-calificaciones-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  color: #fff;
+  padding: 1rem 0;
+  color: var(--color-text);
 }
 
 .dashboard-header {
@@ -209,17 +310,18 @@ onMounted(() => {
 }
 
 .dashboard-header h1 {
-  font-size: 2.5rem;
+  font-size: 2.4rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #60a5fa, #a78bfa);
+  background: var(--grad-heading);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   margin-bottom: 0.5rem;
 }
 
 .dashboard-header p {
-  color: #9ca3af;
-  font-size: 1.1rem;
+  color: var(--color-text);
+  font-size: 1.05rem;
 }
 
 /* Tabs */
@@ -231,35 +333,35 @@ onMounted(() => {
 
 .tabs {
   display: inline-flex;
-  background: rgba(255, 255, 255, 0.05);
-  padding: 0.5rem;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-background-mute);
+  padding: 0.4rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
 }
 
 .tab-btn {
   background: transparent;
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  color: #9ca3af;
-  font-size: 1rem;
+  padding: 0.7rem 1.4rem;
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all var(--t);
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .tab-btn:hover {
-  color: #fff;
+  color: var(--color-heading);
 }
 
 .tab-btn.active {
-  background: rgba(96, 165, 250, 0.15);
-  color: #60a5fa;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: var(--color-surface);
+  color: var(--color-primary-hover);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Content Area */
@@ -269,19 +371,92 @@ onMounted(() => {
 
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1.4rem;
+}
+
+/* Resumen del cuidador */
+.resumen-cuidador {
+  text-align: center;
+  margin-bottom: 2.5rem;
+  padding: 2rem;
+  background: var(--grad-hero);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.promedio-grande {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.estrella-grande {
+  font-size: 2.4rem;
+}
+
+.promedio-num {
+  font-size: 3rem;
+  font-weight: 800;
+  font-family: var(--font-display);
+  color: var(--color-star);
+}
+
+.promedio-label {
+  color: var(--color-text);
+  margin-top: 0.5rem;
+}
+
+/* Tarjeta de calificación recibida */
+.calif-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--t), box-shadow var(--t);
+}
+
+.calif-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.calif-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.estrellas {
+  font-size: 1.05rem;
+  letter-spacing: 2px;
+}
+
+.calif-fecha {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}
+
+.calif-comentario {
+  color: var(--color-text);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  font-style: italic;
 }
 
 /* States */
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 16px;
-  border: 1px dashed rgba(255, 255, 255, 0.1);
-  color: #9ca3af;
-  font-size: 1.1rem;
+  background: var(--color-background-mute);
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--color-border-hover);
+  color: var(--color-text);
+  font-size: 1.05rem;
 }
 
 .loading-state {
@@ -290,14 +465,14 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   height: 300px;
-  color: #9ca3af;
+  color: var(--color-text);
 }
 
 .spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid rgba(255, 255, 255, 0.1);
-  border-left-color: #60a5fa;
+  border: 4px solid var(--color-border);
+  border-left-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 1rem;

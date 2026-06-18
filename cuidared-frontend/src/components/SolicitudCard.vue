@@ -13,7 +13,13 @@
     </div>
     <div class="card-footer" v-if="mostrarAcciones">
       <button v-if="esFutura" class="btn-cancelar" @click="$emit('cancelar', solicitud.id)">Cancelar Cita</button>
-      <button v-if="esHistorial" class="btn-calificar" @click="$emit('calificar', solicitud.id)">Calificar Servicio</button>
+      <template v-else-if="esHistorial">
+        <button v-if="puedeCalificar" class="btn-calificar" @click="$emit('calificar', solicitud.id)">Calificar Servicio</button>
+        <div v-else-if="yaCalificada" class="ya-calificado">
+          <span class="ya-calificado-estrellas">{{ estrellas(solicitud.calificacion.puntuacion) }}</span>
+          <span class="ya-calificado-texto">Ya calificaste este servicio</span>
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -38,7 +44,21 @@ const props = defineProps({
 
 defineEmits(['cancelar', 'calificar'])
 
-const mostrarAcciones = computed(() => props.esFutura || props.esHistorial)
+const esFinalizada = computed(
+  () => (props.solicitud.estado || '').toUpperCase() === 'FINALIZADA'
+)
+
+// El servicio ya tiene una calificación asociada (anotada por la vista padre).
+const yaCalificada = computed(() => !!props.solicitud.calificacion)
+
+// Solo se puede calificar un servicio finalizado que aún no se haya calificado.
+const puedeCalificar = computed(() => esFinalizada.value && !yaCalificada.value)
+
+const mostrarAcciones = computed(
+  () => props.esFutura || (props.esHistorial && esFinalizada.value)
+)
+
+const estrellas = (puntuacion) => '⭐'.repeat(puntuacion || 0)
 
 const estadoClase = (estado) => {
   if (!estado) return 'badge-secondary'
@@ -82,101 +102,126 @@ const formatearHora = (horaArray) => {
 
 <style scoped>
 .solicitud-card {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  padding: 20px;
-  margin-bottom: 20px;
-  color: #fff;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  margin-bottom: 0;
+  color: var(--color-text);
+  transition: transform var(--t), box-shadow var(--t), border-color var(--t);
+  box-shadow: var(--shadow-sm);
 }
 
 .solicitud-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--color-primary-soft);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 10px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 12px;
 }
 
 .fecha {
-  font-weight: 600;
-  font-size: 1.1rem;
-  color: #e0e0e0;
+  font-weight: 700;
+  font-size: 1.05rem;
+  font-family: var(--font-display);
+  color: var(--color-heading);
 }
 
 .badge {
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: bold;
-  letter-spacing: 0.5px;
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
 }
 
-.badge-warning { background-color: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #fbbf24; }
-.badge-success { background-color: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #34d399; }
-.badge-info { background-color: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid #60a5fa; }
-.badge-danger { background-color: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #f87171; }
-.badge-secondary { background-color: rgba(156, 163, 175, 0.2); color: #9ca3af; border: 1px solid #9ca3af; }
+.badge-warning { background-color: var(--color-warning-soft); color: var(--color-warning); }
+.badge-success { background-color: var(--color-success-soft); color: var(--color-success); }
+.badge-info { background-color: var(--color-info-soft); color: var(--color-info); }
+.badge-danger { background-color: var(--color-danger-soft); color: var(--color-danger); }
+.badge-secondary { background-color: var(--color-background-mute); color: var(--color-muted); }
 
 .tipo-asistencia {
-  margin: 0 0 15px 0;
-  font-size: 1.3rem;
-  color: #fff;
+  margin: 0 0 14px 0;
+  font-size: 1.2rem;
+  color: var(--color-heading);
   text-transform: capitalize;
 }
 
 .detalles p {
-  margin: 5px 0;
-  color: #ccc;
-  font-size: 0.95rem;
+  margin: 7px 0;
+  color: var(--color-text);
+  font-size: 0.92rem;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
+.detalles strong {
+  color: var(--color-heading);
+}
+
 .card-footer {
   margin-top: 20px;
   padding-top: 15px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--color-border);
   display: flex;
   justify-content: flex-end;
 }
 
 button {
-  padding: 8px 16px;
+  padding: 9px 18px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color var(--t-fast), transform var(--t-fast);
 }
 
 .btn-cancelar {
-  background-color: rgba(239, 68, 68, 0.1);
-  color: #f87171;
-  border: 1px solid #f87171;
+  background-color: var(--color-danger-soft);
+  color: var(--color-danger);
 }
 
 .btn-cancelar:hover {
-  background-color: rgba(239, 68, 68, 0.2);
+  background-color: #fca5a5;
+  transform: translateY(-1px);
 }
 
 .btn-calificar {
-  background-color: rgba(59, 130, 246, 0.1);
-  color: #60a5fa;
-  border: 1px solid #60a5fa;
+  background: var(--grad-primary);
+  color: #fff;
+  box-shadow: var(--shadow-primary);
 }
 
 .btn-calificar:hover {
-  background-color: rgba(59, 130, 246, 0.2);
+  transform: translateY(-1px);
+}
+
+.ya-calificado {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ya-calificado-estrellas {
+  font-size: 0.95rem;
+  letter-spacing: 1px;
+}
+
+.ya-calificado-texto {
+  color: var(--color-success);
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: var(--color-success-soft);
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
 }
 </style>

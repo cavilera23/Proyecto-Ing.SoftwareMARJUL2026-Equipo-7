@@ -185,7 +185,7 @@ const registrarPerfil = async () => {
 <template>
   <div class="perfil-view">
     <div class="header-section">
-      <h1>Completar Perfil</h1>
+      <h1 class="page-title">Crea tu cuenta</h1>
       <p>Regístrate en la comunidad para solicitar u ofrecer asistencia.</p>
     </div>
 
@@ -320,17 +320,18 @@ const registrarPerfil = async () => {
 
 <style scoped>
 .perfil-view {
-  max-width: 560px;
+  max-width: 580px;
   margin: 0 auto;
   padding: 20px;
 }
 
 .header-section {
-  margin-bottom: 24px;
+  margin-bottom: 26px;
+  text-align: center;
 }
 
 .header-section h1 {
-  color: var(--color-heading);
+  font-size: 2.4rem;
   margin-bottom: 8px;
 }
 
@@ -342,113 +343,133 @@ const registrarPerfil = async () => {
 .formulario {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
   background-color: var(--color-background-soft);
   border: 1px solid var(--color-border);
-  padding: 24px;
-  border-radius: 12px;
+  padding: 30px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  animation: fadeUp 0.4s ease both;
 }
 
 .campo {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
 }
 
 .campo label {
-  color: var(--color-text);
-  font-size: 14px;
-  font-weight: 500;
+  color: var(--color-heading);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .campo small {
-  color: var(--color-text);
-  opacity: 0.85;
+  color: var(--color-primary-hover);
+  font-weight: 500;
   font-size: 12px;
 }
 
 .seccion-cuidador {
-  background-color: var(--color-background);
-  padding: 16px;
-  border-radius: 10px;
-  border: 1px solid var(--color-border);
+  background-color: var(--color-primary-tint);
+  padding: 22px;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-primary-soft);
   display: flex;
   flex-direction: column;
   gap: 16px;
+  animation: fadeUp 0.35s ease both;
 }
 
 .seccion-cuidador h3 {
   color: var(--color-heading);
   margin: 0;
+  font-size: 1.1rem;
 }
 
 .checkbox-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
 }
 
 .checkbox-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  color: var(--color-text);
+  gap: 8px;
+  color: var(--color-heading);
   font-size: 14px;
+  font-weight: 500;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  padding: 9px 14px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+
+.checkbox-item:hover {
+  border-color: var(--color-primary);
+}
+
+.checkbox-item input {
+  accent-color: var(--color-primary);
+  width: 16px;
+  height: 16px;
 }
 
 input,
 select {
-  padding: 10px;
-  border-radius: 6px;
-  border: 1px solid var(--color-border);
-  background-color: var(--color-background);
-  color: var(--color-heading);
+  width: 100%;
 }
 
 input[type="file"] {
-  padding: 8px;
+  padding: 9px;
+  background: #fff;
 }
 
-button {
-  padding: 12px;
-  background-color: var(--color-primary);
+button[type="submit"] {
+  padding: 14px;
+  background: var(--grad-primary);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   font-weight: 700;
-  transition:
-    background 0.2s ease,
-    opacity 0.2s ease;
+  font-size: 15px;
+  box-shadow: var(--shadow-primary);
+  transition: transform var(--t-fast), box-shadow var(--t-fast), opacity var(--t-fast);
 }
 
-button:hover {
-  background-color: var(--color-primary-hover);
+button[type="submit"]:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(16, 185, 129, 0.34);
 }
 
-button:disabled {
+button[type="submit"]:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .mensaje {
   margin-top: 18px;
-  padding: 12px;
-  border-radius: 6px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
   font-weight: 600;
   font-size: 14px;
 }
 
 .mensaje-exito {
-  background-color: rgba(16, 185, 129, 0.15);
-  color: var(--color-primary);
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background-color: var(--color-success-soft);
+  color: var(--color-success);
+  border: 1px solid #6ee7b7;
 }
 
 .mensaje-error {
-  background-color: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background-color: var(--color-danger-soft);
+  color: var(--color-danger);
+  border: 1px solid #fca5a5;
 }
 
 @media (max-width: 640px) {
@@ -457,11 +478,7 @@ button:disabled {
   }
 
   .formulario {
-    padding: 18px;
-  }
-
-  .checkbox-group {
-    flex-direction: column;
+    padding: 20px;
   }
 }
 </style>

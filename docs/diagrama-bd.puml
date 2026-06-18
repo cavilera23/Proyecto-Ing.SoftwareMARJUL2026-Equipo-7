@@ -15,6 +15,7 @@ entity "usuarios" as usuarios {
   nombre : varchar
   correo : varchar
   telefono : varchar
+  contrasena : varchar
   * calificacion_promedio : double
   .. solo CUIDADOR (nullable) ..
   disponible : boolean

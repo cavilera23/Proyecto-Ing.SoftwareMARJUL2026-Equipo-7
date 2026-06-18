@@ -25,3 +25,26 @@ export const cancelarSolicitudApi = async (id) => {
     method: 'PATCH'
   })
 }
+
+// --- Lado del cuidador (mercado de solicitudes abiertas) ---
+
+// Solicitudes PENDIENTES y abiertas que el cuidador en sesión puede tomar.
+export const listarSolicitudesDisponiblesApi = async () => {
+  return await apiFetch(`/intercambio/solicitudes/disponibles`, {
+    method: 'GET'
+  })
+}
+
+// Solicitudes que el cuidador en sesión ya aceptó (activas + historial).
+export const listarMisSolicitudesCuidadorApi = async () => {
+  return await apiFetch(`/intercambio/solicitudes/cuidador/mias`, {
+    method: 'GET'
+  })
+}
+
+// El cuidador en sesión acepta una solicitud pendiente.
+export const aceptarSolicitudApi = async (id) => {
+  return await apiFetch(`/intercambio/solicitudes/${id}/aceptar`, {
+    method: 'PATCH'
+  })
+}

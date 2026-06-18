@@ -56,6 +56,44 @@ public class IntercambioController {
         return ResponseEntity.ok(solicitudService.obtenerHistorialYFuturasPorPadre(padreId));
     }
 
+    // --- LADO DEL CUIDADOR (mercado de solicitudes abiertas) ---
+
+    // Solicitudes PENDIENTES y abiertas que el cuidador (del token) puede tomar,
+    // según sus habilidades, sin importar si caen fuera de su horario declarado.
+    @GetMapping("/solicitudes/disponibles")
+    public ResponseEntity<?> listarDisponiblesParaCuidador(HttpServletRequest request) {
+        String cuidadorId = (String) request.getAttribute("usuarioId");
+        try {
+            return ResponseEntity.ok(solicitudService.obtenerSolicitudesDisponiblesPara(cuidadorId));
+        } catch (ReglaNegocioException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // Solicitudes que el cuidador (del token) ya aceptó, separadas en activas e historial.
+    @GetMapping("/solicitudes/cuidador/mias")
+    public ResponseEntity<?> listarMisSolicitudesCuidador(HttpServletRequest request) {
+        String cuidadorId = (String) request.getAttribute("usuarioId");
+        try {
+            return ResponseEntity.ok(solicitudService.obtenerSolicitudesDeCuidador(cuidadorId));
+        } catch (ReglaNegocioException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // El cuidador (del token) acepta una solicitud pendiente y queda asignado a ella.
+    @PatchMapping("/solicitudes/{id}/aceptar")
+    public ResponseEntity<?> aceptarSolicitud(HttpServletRequest request, @PathVariable String id) {
+        String cuidadorId = (String) request.getAttribute("usuarioId");
+        try {
+            return ResponseEntity.ok(solicitudService.aceptarSolicitud(id, cuidadorId));
+        } catch (ReglaNegocioException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (SolapamientoHorarioException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", e.getMessage()));
+        }
+    }
+
     // --- SPRINT 2 ---
 
     @PutMapping("/solicitudes/{id}")

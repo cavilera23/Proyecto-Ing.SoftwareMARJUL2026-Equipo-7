@@ -1,7 +1,7 @@
 <template>
   <div class="notificaciones-container">
     <header class="dashboard-header">
-      <h1>Notificaciones</h1>
+      <h1 class="page-title">Notificaciones</h1>
       <p>Revisa los avisos del sistema y silencia los que no quieras seguir viendo.</p>
     </header>
 
@@ -90,9 +90,13 @@ import {
   programarNotificacionApi,
   eliminarNotificacionApi
 } from '../services/notificacionService'
+import { auth } from '@/stores/auth'
 
-// ID hardcoded igual que en el resto de vistas de prueba
-const USUARIO_TEST_ID = 'test-padre-123'
+// El usuario en sesión (su id viene del token al iniciar sesión).
+const usuarioId = computed(() => auth.usuario?.id)
+
+// Base de estilo claro para los modales de esta vista.
+const swalBase = { background: '#ffffff', color: '#5a6675', customClass: { popup: 'cr-swal', title: 'cr-swal-title', confirmButton: 'cr-swal-confirm', cancelButton: 'cr-swal-cancel' } }
 
 const notificaciones = ref([])
 const cargando = ref(true)
@@ -117,7 +121,7 @@ const cerrarFormulario = () => {
 
 const programar = async () => {
   if (!nuevo.value.mensaje.trim() || !nuevo.value.fechaProgramada) {
-    Swal.fire({ icon: 'warning', title: 'Faltan datos', text: 'Indica un mensaje y la fecha del aviso.', background: '#1f2937', color: '#fff' })
+    Swal.fire({ ...swalBase, icon: 'warning', title: 'Faltan datos', text: 'Indica un mensaje y la fecha del aviso.' })
     return
   }
 
@@ -129,7 +133,7 @@ const programar = async () => {
   guardando.value = true
   try {
     await programarNotificacionApi({
-      usuarioId: USUARIO_TEST_ID,
+      usuarioId: usuarioId.value,
       titulo: nuevo.value.titulo.trim() || 'Recordatorio',
       mensaje: nuevo.value.mensaje.trim(),
       tipo: 'RECORDATORIO',
@@ -137,9 +141,9 @@ const programar = async () => {
     })
     cerrarFormulario()
     await cargarNotificaciones()
-    Swal.fire({ icon: 'success', title: '¡Listo!', text: 'Tu recordatorio fue programado.', background: '#1f2937', color: '#fff', timer: 1800, showConfirmButton: false })
+    Swal.fire({ ...swalBase, icon: 'success', title: '¡Listo!', text: 'Tu recordatorio fue programado.', timer: 1800, showConfirmButton: false })
   } catch (error) {
-    Swal.fire({ icon: 'error', title: 'No se pudo programar', text: error.message, background: '#1f2937', color: '#fff' })
+    Swal.fire({ ...swalBase, icon: 'error', title: 'No se pudo programar', text: error.message })
   } finally {
     guardando.value = false
   }
@@ -153,10 +157,8 @@ const eliminar = async (notif) => {
     showCancelButton: true,
     confirmButtonText: 'Sí, eliminar',
     cancelButtonText: 'Cancelar',
-    confirmButtonColor: '#ef4444',
-    cancelButtonColor: '#6b7280',
-    background: '#1f2937',
-    color: '#fff'
+    confirmButtonColor: '#dc2626',
+    ...swalBase
   })
 
   if (!result.isConfirmed) return
@@ -164,9 +166,9 @@ const eliminar = async (notif) => {
   try {
     await eliminarNotificacionApi(notif.id)
     notificaciones.value = notificaciones.value.filter(n => n.id !== notif.id)
-    Swal.fire({ icon: 'success', title: 'Eliminada', text: 'La notificación fue eliminada.', background: '#1f2937', color: '#fff', timer: 1500, showConfirmButton: false })
+    Swal.fire({ ...swalBase, icon: 'success', title: 'Eliminada', text: 'La notificación fue eliminada.', timer: 1500, showConfirmButton: false })
   } catch (error) {
-    Swal.fire({ icon: 'error', title: 'Error', text: error.message, background: '#1f2937', color: '#fff' })
+    Swal.fire({ ...swalBase, icon: 'error', title: 'Error', text: error.message })
   }
 }
 
@@ -176,17 +178,16 @@ const esPendiente = (n) => !n.disparada && !!n.fechaProgramada
 const cargarNotificaciones = async (silencioso = false) => {
   if (!silencioso) cargando.value = true
   try {
-    const data = await listarNotificacionesApi(USUARIO_TEST_ID, incluirSilenciadas.value)
+    const data = await listarNotificacionesApi(usuarioId.value, incluirSilenciadas.value)
     notificaciones.value = data || []
   } catch (error) {
     console.error('Error al cargar notificaciones:', error)
     if (!silencioso) {
       Swal.fire({
+        ...swalBase,
         icon: 'error',
         title: 'Oops...',
-        text: 'No se pudieron cargar las notificaciones. ' + error.message,
-        background: '#1f2937',
-        color: '#fff'
+        text: 'No se pudieron cargar las notificaciones. ' + error.message
       })
     }
   } finally {
@@ -199,7 +200,7 @@ const silenciar = async (id) => {
     await silenciarNotificacionApi(id)
     cargarNotificaciones()
   } catch (error) {
-    Swal.fire({ icon: 'error', title: 'Error', text: error.message, background: '#1f2937', color: '#fff' })
+    Swal.fire({ ...swalBase, icon: 'error', title: 'Error', text: error.message })
   }
 }
 
@@ -208,7 +209,7 @@ const activar = async (id) => {
     await activarNotificacionApi(id)
     cargarNotificaciones()
   } catch (error) {
-    Swal.fire({ icon: 'error', title: 'Error', text: error.message, background: '#1f2937', color: '#fff' })
+    Swal.fire({ ...swalBase, icon: 'error', title: 'Error', text: error.message })
   }
 }
 
@@ -251,9 +252,8 @@ onUnmounted(() => {
 .notificaciones-container {
   max-width: 800px;
   margin: 0 auto;
-  padding: 2rem;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  color: #fff;
+  padding: 1rem 0;
+  color: var(--color-text);
 }
 
 .dashboard-header {
@@ -262,17 +262,14 @@ onUnmounted(() => {
 }
 
 .dashboard-header h1 {
-  font-size: 2.5rem;
+  font-size: 2.4rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #60a5fa, #a78bfa);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   margin-bottom: 0.5rem;
 }
 
 .dashboard-header p {
-  color: #9ca3af;
-  font-size: 1.1rem;
+  color: var(--color-text);
+  font-size: 1.05rem;
 }
 
 .toolbar {
@@ -281,70 +278,64 @@ onUnmounted(() => {
   align-items: center;
   gap: 1rem;
   margin-bottom: 1.5rem;
+  flex-wrap: wrap;
 }
 
 .btn-programar {
-  background: linear-gradient(135deg, #60a5fa, #a78bfa);
+  background: var(--grad-primary);
   color: #fff;
   border: none;
-  padding: 10px 18px;
+  padding: 11px 20px;
   font-size: 0.95rem;
+  box-shadow: var(--shadow-primary);
+  transition: transform var(--t-fast), box-shadow var(--t-fast);
 }
 
 .btn-programar:hover {
-  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(16, 185, 129, 0.3);
 }
 
 .form-programar {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
+  background: var(--color-background-soft);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   padding: 1.5rem;
   margin-bottom: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  box-shadow: var(--shadow-md);
 }
 
 .form-programar h2 {
   margin: 0;
-  font-size: 1.3rem;
-  color: #fff;
+  font-size: 1.25rem;
+  color: var(--color-heading);
 }
 
 .form-ayuda {
   margin: -0.5rem 0 0;
-  color: #9ca3af;
+  color: var(--color-text);
   font-size: 0.9rem;
 }
 
 .campo {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.45rem;
 }
 
 .campo span {
-  font-size: 0.85rem;
-  color: #cbd5e1;
+  font-size: 0.8rem;
+  color: var(--color-heading);
   font-weight: 600;
 }
 
 .campo input,
 .campo textarea {
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
-  padding: 10px 12px;
-  color: #fff;
-  font-size: 0.95rem;
+  width: 100%;
   font-family: inherit;
-}
-
-.campo input:focus,
-.campo textarea:focus {
-  outline: none;
-  border-color: #60a5fa;
 }
 
 .form-acciones {
@@ -354,40 +345,43 @@ onUnmounted(() => {
 }
 
 .btn-guardar {
-  background-color: #10b981;
+  background: var(--grad-primary);
   color: #fff;
   border: none;
-  padding: 9px 20px;
+  padding: 10px 22px;
+  box-shadow: var(--shadow-primary);
+  transition: transform var(--t-fast);
 }
 
-.btn-guardar:hover {
-  background-color: #059669;
+.btn-guardar:hover:not(:disabled) {
+  transform: translateY(-1px);
 }
 
 .btn-guardar:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .btn-cancelar {
-  background-color: transparent;
-  color: #9ca3af;
-  border: 1px solid #6b7280;
-  padding: 9px 20px;
+  background-color: var(--color-background-mute);
+  color: var(--color-heading);
+  border: 1px solid var(--color-border);
+  padding: 10px 22px;
 }
 
 .btn-cancelar:hover {
-  background-color: rgba(156, 163, 175, 0.1);
+  border-color: var(--color-border-hover);
 }
 
 .badge-programada {
   display: inline-block;
   margin-top: 0.5rem;
-  background: rgba(96, 165, 250, 0.15);
-  color: #93c5fd;
-  border: 1px solid rgba(96, 165, 250, 0.4);
-  padding: 3px 10px;
-  border-radius: 999px;
+  background: var(--color-info-soft);
+  color: var(--color-info);
+  border: 1px solid #bfdbfe;
+  padding: 3px 12px;
+  border-radius: var(--radius-full);
   font-size: 0.78rem;
   font-weight: 600;
 }
@@ -408,9 +402,16 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #9ca3af;
-  font-size: 0.95rem;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 500;
   cursor: pointer;
+}
+
+.switch-label input {
+  accent-color: var(--color-primary);
+  width: 16px;
+  height: 16px;
 }
 
 .lista {
@@ -423,23 +424,32 @@ onUnmounted(() => {
   display: flex;
   align-items: flex-start;
   gap: 1rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
-  padding: 1rem 1.25rem;
-  transition: transform 0.2s ease;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1.35rem;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--t), box-shadow var(--t);
 }
 
 .notif-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
 }
 
 .notif-card.silenciada {
-  opacity: 0.55;
+  opacity: 0.6;
 }
 
 .notif-icono {
-  font-size: 1.5rem;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  font-size: 1.3rem;
+  background: var(--color-primary-tint);
+  border-radius: 12px;
+  flex-shrink: 0;
 }
 
 .notif-body {
@@ -456,20 +466,20 @@ onUnmounted(() => {
 
 .notif-top h3 {
   margin: 0;
-  font-size: 1.05rem;
-  color: #fff;
+  font-size: 1.02rem;
+  color: var(--color-heading);
 }
 
 .notif-fecha {
-  color: #9ca3af;
+  color: var(--color-muted);
   font-size: 0.8rem;
   white-space: nowrap;
 }
 
 .notif-mensaje {
   margin: 0;
-  color: #ccc;
-  font-size: 0.95rem;
+  color: var(--color-text);
+  font-size: 0.92rem;
 }
 
 .notif-acciones {
@@ -479,52 +489,52 @@ onUnmounted(() => {
 }
 
 button {
-  padding: 6px 12px;
-  border-radius: 8px;
+  padding: 7px 13px;
+  border-radius: var(--radius-sm);
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color var(--t-fast), border-color var(--t-fast);
   white-space: nowrap;
 }
 
 .btn-silenciar {
-  background-color: rgba(156, 163, 175, 0.1);
-  color: #9ca3af;
-  border: 1px solid #9ca3af;
+  background-color: var(--color-background-mute);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
 }
 
 .btn-silenciar:hover {
-  background-color: rgba(156, 163, 175, 0.2);
+  border-color: var(--color-border-hover);
 }
 
 .btn-activar {
-  background-color: rgba(59, 130, 246, 0.1);
-  color: #60a5fa;
-  border: 1px solid #60a5fa;
+  background-color: var(--color-info-soft);
+  color: var(--color-info);
+  border: 1px solid #bfdbfe;
 }
 
 .btn-activar:hover {
-  background-color: rgba(59, 130, 246, 0.2);
+  background-color: #bfdbfe;
 }
 
 .btn-eliminar {
-  background-color: rgba(239, 68, 68, 0.1);
-  color: #f87171;
-  border: 1px solid #ef4444;
+  background-color: var(--color-danger-soft);
+  color: var(--color-danger);
+  border: 1px solid #fca5a5;
 }
 
 .btn-eliminar:hover {
-  background-color: rgba(239, 68, 68, 0.2);
+  background-color: #fca5a5;
 }
 
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 16px;
-  border: 1px dashed rgba(255, 255, 255, 0.1);
-  color: #9ca3af;
+  background: var(--color-background-mute);
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--color-border-hover);
+  color: var(--color-text);
 }
 
 .loading-state {
@@ -533,14 +543,14 @@ button {
   align-items: center;
   justify-content: center;
   height: 300px;
-  color: #9ca3af;
+  color: var(--color-text);
 }
 
 .spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid rgba(255, 255, 255, 0.1);
-  border-left-color: #60a5fa;
+  border: 4px solid var(--color-border);
+  border-left-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 1rem;

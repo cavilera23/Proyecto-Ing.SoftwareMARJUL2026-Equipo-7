@@ -180,7 +180,7 @@ onMounted(cargarPerfil);
 <template>
   <div class="perfil-view">
     <div class="header-section">
-      <h1>Mi Perfil</h1>
+      <h1 class="page-title">Mi Perfil</h1>
       <p>Consulta, actualiza o elimina la información de tu cuenta.</p>
     </div>
 
@@ -194,8 +194,12 @@ onMounted(cargarPerfil);
     <div v-else-if="perfil" class="tarjeta">
       <!-- MODO LECTURA -->
       <template v-if="!editando">
-        <div class="rol-badge">
-          {{ esCuidador ? "Cuidador" : "Padre / Tutor" }}
+        <div class="perfil-hero">
+          <span class="perfil-avatar">{{ (perfil.nombre || "?").trim().charAt(0).toUpperCase() }}</span>
+          <div class="perfil-hero-info">
+            <h2>{{ perfil.nombre }}</h2>
+            <span class="rol-badge">{{ esCuidador ? "Cuidador" : "Padre / Tutor" }}</span>
+          </div>
         </div>
 
         <div class="dato">
@@ -333,17 +337,18 @@ onMounted(cargarPerfil);
 
 <style scoped>
 .perfil-view {
-  max-width: 560px;
+  max-width: 580px;
   margin: 0 auto;
   padding: 20px;
 }
 
 .header-section {
   margin-bottom: 24px;
+  text-align: center;
 }
 
 .header-section h1 {
-  color: var(--color-heading);
+  font-size: 2.4rem;
   margin-bottom: 8px;
 }
 
@@ -355,6 +360,7 @@ onMounted(cargarPerfil);
 .estado {
   color: var(--color-text);
   padding: 16px 0;
+  text-align: center;
 }
 
 .tarjeta {
@@ -363,16 +369,47 @@ onMounted(cargarPerfil);
   gap: 16px;
   background-color: var(--color-background-soft);
   border: 1px solid var(--color-border);
-  padding: 24px;
-  border-radius: 12px;
+  padding: 30px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  animation: fadeUp 0.4s ease both;
+}
+
+/* Cabecera del perfil con avatar */
+.perfil-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.perfil-avatar {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--grad-primary);
+  color: #fff;
+  font-size: 28px;
+  font-weight: 800;
+  font-family: var(--font-display);
+  box-shadow: var(--shadow-primary);
+}
+
+.perfil-hero-info h2 {
+  margin: 0 0 6px;
+  font-size: 1.4rem;
+  color: var(--color-heading);
 }
 
 .rol-badge {
   align-self: flex-start;
-  background-color: rgba(16, 185, 129, 0.15);
-  color: var(--color-primary);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  border-radius: 999px;
+  background-color: var(--color-primary-tint);
+  color: var(--color-primary-hover);
+  border: 1px solid var(--color-primary-soft);
+  border-radius: var(--radius-full);
   padding: 4px 14px;
   font-size: 13px;
   font-weight: 600;
@@ -383,7 +420,7 @@ onMounted(cargarPerfil);
   flex-direction: column;
   gap: 4px;
   border-bottom: 1px solid var(--color-border);
-  padding-bottom: 12px;
+  padding-bottom: 14px;
 }
 
 .dato:last-of-type {
@@ -391,9 +428,11 @@ onMounted(cargarPerfil);
 }
 
 .etiqueta {
-  color: var(--color-text);
-  font-size: 13px;
-  opacity: 0.8;
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
 }
 
 .valor {
@@ -406,11 +445,13 @@ onMounted(cargarPerfil);
 }
 
 .chip {
-  background-color: var(--color-background);
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  padding: 2px 10px;
+  background-color: var(--color-primary-tint);
+  color: var(--color-primary-hover);
+  border: 1px solid var(--color-primary-soft);
+  border-radius: var(--radius-full);
+  padding: 3px 12px;
   font-size: 13px;
+  font-weight: 600;
 }
 
 .formulario {
@@ -422,20 +463,20 @@ onMounted(cargarPerfil);
 .campo {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
 }
 
 .campo label {
-  color: var(--color-text);
-  font-size: 14px;
-  font-weight: 500;
+  color: var(--color-heading);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .seccion-cuidador {
-  background-color: var(--color-background);
-  padding: 16px;
-  border-radius: 10px;
-  border: 1px solid var(--color-border);
+  background-color: var(--color-primary-tint);
+  padding: 20px;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-primary-soft);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -444,28 +485,42 @@ onMounted(cargarPerfil);
 .seccion-cuidador h3 {
   color: var(--color-heading);
   margin: 0;
+  font-size: 1.05rem;
 }
 
 .checkbox-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
 }
 
 .checkbox-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  color: var(--color-text);
+  gap: 8px;
+  color: var(--color-heading);
   font-size: 14px;
+  font-weight: 500;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  padding: 9px 14px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: border-color var(--t-fast);
+}
+
+.checkbox-item:hover {
+  border-color: var(--color-primary);
+}
+
+.checkbox-item input {
+  accent-color: var(--color-primary);
+  width: 16px;
+  height: 16px;
 }
 
 input {
-  padding: 10px;
-  border-radius: 6px;
-  border: 1px solid var(--color-border);
-  background-color: var(--color-background);
-  color: var(--color-heading);
+  width: 100%;
 }
 
 .acciones {
@@ -476,53 +531,54 @@ input {
 }
 
 button {
-  padding: 12px 18px;
+  padding: 12px 20px;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   font-weight: 700;
-  transition:
-    background 0.2s ease,
-    opacity 0.2s ease;
+  transition: transform var(--t-fast), box-shadow var(--t-fast), background var(--t-fast);
 }
 
 button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .btn-primario {
-  background-color: var(--color-primary);
+  background: var(--grad-primary);
   color: white;
+  box-shadow: var(--shadow-primary);
 }
 
 .btn-primario:hover:not(:disabled) {
-  background-color: var(--color-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(16, 185, 129, 0.32);
 }
 
 .btn-secundario {
-  background-color: transparent;
+  background-color: var(--color-background-mute);
   color: var(--color-heading);
   border: 1px solid var(--color-border);
 }
 
 .btn-secundario:hover:not(:disabled) {
-  background-color: rgba(255, 255, 255, 0.05);
+  border-color: var(--color-border-hover);
 }
 
 .btn-peligro {
   background-color: transparent;
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger-soft);
 }
 
 .btn-peligro:hover:not(:disabled) {
-  background-color: rgba(239, 68, 68, 0.12);
+  background-color: var(--color-danger-soft);
 }
 
 .mensaje {
-  padding: 12px;
-  border-radius: 6px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
   font-weight: 600;
   font-size: 14px;
   display: flex;
@@ -532,9 +588,9 @@ button:disabled {
 }
 
 .mensaje-error {
-  background-color: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background-color: var(--color-danger-soft);
+  color: var(--color-danger);
+  border: 1px solid #fca5a5;
 }
 
 @media (max-width: 640px) {

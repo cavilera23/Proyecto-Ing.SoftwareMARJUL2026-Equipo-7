@@ -1,11 +1,15 @@
 import Swal from "sweetalert2";
 
 const baseConfig = {
-  background: "#1f2937",
-  color: "#f9fafb",
+  background: "#ffffff",
+  color: "#5a6675",
   confirmButtonText: "Aceptar",
+  buttonsStyling: true,
   customClass: {
-    popup: "rounded-alert",
+    popup: "cr-swal",
+    title: "cr-swal-title",
+    confirmButton: "cr-swal-confirm",
+    cancelButton: "cr-swal-cancel",
   },
 };
 

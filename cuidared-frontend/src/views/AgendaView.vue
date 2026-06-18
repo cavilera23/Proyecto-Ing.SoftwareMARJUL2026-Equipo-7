@@ -16,8 +16,10 @@ import {
   modificarHorarioApi,
   eliminarHorarioApi,
 } from "@/services/agendaService";
+import { auth } from "@/stores/auth";
 
-const cuidadorId = ref(localStorage.getItem('cuidadorId') || '')
+// El cuidador en sesión: ya no hace falta pegar el ID a mano, se toma del token.
+const cuidadorId = ref(auth.usuario?.id || localStorage.getItem('cuidadorId') || '')
 
 watch(cuidadorId, async (nuevoId) => {
   localStorage.setItem('cuidadorId', nuevoId)
@@ -343,19 +345,8 @@ const formatearDuracion = (horario) => {
 
 <template>
   <div class="agenda-layout">
-    <div class="id-section">
-      <label>Mi ID de Cuidador:</label>
-      <input
-        type="text"
-        v-model="cuidadorId"
-        placeholder="Pega aquí el ID que recibiste al crear tu perfil"
-        class="input-id"
-      />
-      <small v-if="!cuidadorId">Necesitas tu ID para ver y registrar horarios</small>
-    </div>
-
     <div class="header-section">
-      <h1>Gestión de Agenda</h1>
+      <h1 class="page-title">Gestión de Agenda</h1>
       <p>
         Selecciona un día en el calendario interactivo para declarar tus bloques
         de disponibilidad como cuidador. Asegúrate de que los horarios no se
@@ -494,7 +485,8 @@ const formatearDuracion = (horario) => {
   background-color: var(--color-background-soft);
   border: 1px solid var(--color-border);
   padding: 25px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -538,18 +530,20 @@ select {
 }
 
 .btn-guardar {
-  padding: 12px;
-  background-color: var(--color-primary);
+  padding: 13px;
+  background: var(--grad-primary);
   color: white;
   border: none;
-  border-radius: 6px;
-  font-weight: 600;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.2s ease;
+  box-shadow: var(--shadow-primary);
+  transition: transform var(--t-fast), box-shadow var(--t-fast);
 }
 
 .btn-guardar:hover {
-  background-color: var(--color-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(16, 185, 129, 0.32);
 }
 
 .acciones-form {
@@ -580,7 +574,8 @@ select {
   background-color: var(--color-background-soft);
   border: 1px solid var(--color-border);
   padding: 25px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
 }
 
 .lista-horarios h3 {
@@ -710,7 +705,8 @@ select {
   background-color: var(--color-background-soft);
   border: 1px solid var(--color-border);
   padding: 20px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
 }
 
 :deep(.fc) {

@@ -2,6 +2,7 @@ package com.cuidared.services;
 
 import com.cuidared.exceptions.ReglaNegocioException;
 import com.cuidared.exceptions.SolapamientoHorarioException;
+import com.cuidared.models.Cuidador;
 import com.cuidared.models.Padre;
 import com.cuidared.models.Solicitud;
 import com.cuidared.models.Usuario;
@@ -115,6 +116,120 @@ public class SolicitudService {
 
     public List<Solicitud> obtenerTodas() {
         return solicitudRepository.findAll();
+    }
+
+    /**
+     * Lista las solicitudes que un cuidador puede aceptar: las que están
+     * PENDIENTES, todavía no tienen cuidador asignado y cuyo tipo de asistencia
+     * coincide con alguna de sus habilidades.
+     *
+     * A propósito NO se filtra por la disponibilidad declarada del cuidador: la
+     * idea es que pueda ver una solicitud aunque caiga fuera de su horario
+     * publicado y decidir por sí mismo si la toma o no.
+     */
+    public List<Solicitud> obtenerSolicitudesDisponiblesPara(String cuidadorId) {
+        Cuidador cuidador = obtenerCuidador(cuidadorId);
+
+        return solicitudRepository.findAll().stream()
+                .filter(s -> s.getEstado() == EstadoSolicitud.PENDIENTE)
+                .filter(s -> s.getCuidadorId() == null || s.getCuidadorId().isBlank())
+                .filter(s -> s.getTipo() != null && cuidador.getHabilidades().contains(s.getTipo()))
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    /**
+     * Lista las solicitudes ya asignadas a un cuidador (las que aceptó),
+     * separando lo que sigue activo (ACEPTADA) de lo que ya pasó al historial
+     * (FINALIZADA / CANCELADA).
+     */
+    public java.util.Map<String, List<Solicitud>> obtenerSolicitudesDeCuidador(String cuidadorId) {
+        obtenerCuidador(cuidadorId);
+
+        List<Solicitud> delCuidador = solicitudRepository.findAll().stream()
+                .filter(s -> cuidadorId.equals(s.getCuidadorId()))
+                .collect(java.util.stream.Collectors.toList());
+
+        List<Solicitud> activas = new java.util.ArrayList<>();
+        List<Solicitud> historial = new java.util.ArrayList<>();
+        for (Solicitud s : delCuidador) {
+            if (s.getEstado() == EstadoSolicitud.ACEPTADA) {
+                activas.add(s);
+            } else {
+                historial.add(s);
+            }
+        }
+
+        java.util.Map<String, List<Solicitud>> resultado = new java.util.HashMap<>();
+        resultado.put("activas", activas);
+        resultado.put("historial", historial);
+        return resultado;
+    }
+
+    /**
+     * Un cuidador acepta una solicitud pendiente y queda asignado a ella.
+     * Permite aceptar aunque la franja caiga fuera de su disponibilidad
+     * declarada, pero bloquea si choca con otro servicio que ya tenga ACEPTADO
+     * (evita doble reserva en el mismo horario).
+     */
+    public Solicitud aceptarSolicitud(String id, String cuidadorId) {
+        Cuidador cuidador = obtenerCuidador(cuidadorId);
+
+        Solicitud solicitud = solicitudRepository.findById(id)
+                .orElseThrow(() -> new ReglaNegocioException("La solicitud no existe."));
+
+        if (solicitud.getEstado() != EstadoSolicitud.PENDIENTE) {
+            throw new ReglaNegocioException("Esta solicitud ya no está disponible para aceptar.");
+        }
+
+        if (solicitud.getCuidadorId() != null && !solicitud.getCuidadorId().isBlank()
+                && !solicitud.getCuidadorId().equals(cuidadorId)) {
+            throw new ReglaNegocioException("Esta solicitud ya fue tomada por otro cuidador.");
+        }
+
+        if (solicitud.getTipo() != null && !cuidador.getHabilidades().contains(solicitud.getTipo())) {
+            throw new ReglaNegocioException("Esta solicitud requiere un tipo de asistencia que no ofreces.");
+        }
+
+        // Evitar doble reserva: que no choque con otra solicitud ya ACEPTADA.
+        if (solicitud.getHorario() != null) {
+            boolean choca = solicitudRepository.findAll().stream()
+                    .filter(s -> cuidadorId.equals(s.getCuidadorId()))
+                    .filter(s -> s.getEstado() == EstadoSolicitud.ACEPTADA)
+                    .filter(s -> s.getHorario() != null)
+                    .anyMatch(s -> s.getHorario().seSolapaCon(solicitud.getHorario()));
+            if (choca) {
+                throw new SolapamientoHorarioException(
+                        "Ya tienes un servicio aceptado que se solapa con este horario.");
+            }
+        }
+
+        solicitud.setCuidadorId(cuidadorId);
+        solicitud.setEstado(EstadoSolicitud.ACEPTADA);
+        Solicitud guardada = solicitudRepository.save(solicitud);
+
+        // Avisar al padre que su solicitud fue aceptada.
+        notificacionService.registrarNotificacion(
+                solicitud.getPadreId(),
+                "Solicitud aceptada",
+                "El cuidador " + cuidador.getNombre() + " aceptó tu solicitud de cuidado.",
+                "SOLICITUD"
+        );
+
+        return guardada;
+    }
+
+    /**
+     * Obtiene un cuidador validando su existencia y tipo.
+     */
+    private Cuidador obtenerCuidador(String cuidadorId) {
+        if (cuidadorId == null || cuidadorId.isBlank()) {
+            throw new ReglaNegocioException("El ID del cuidador es obligatorio.");
+        }
+        Optional<Usuario> userOpt = usuarioRepository.findById(cuidadorId);
+        if (userOpt.isEmpty() || !(userOpt.get() instanceof Cuidador)) {
+            throw new ReglaNegocioException("Cuidador no encontrado.");
+        }
+        return (Cuidador) userOpt.get();
     }
 
     /**

@@ -1,39 +1,103 @@
 @import "./base.css";
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap");
 
-/* Sobreescribimos las variables base con tu paleta oscura de la maqueta */
+/* ============================================================
+   CuidaRed · Sistema de diseño (tema claro y luminoso)
+   ============================================================ */
 :root {
-  --color-background: #0f172a; /* Fondo oscuro profundo (Slate 900) */
-  --color-background-soft: #1e293b; /* Fondo de tarjetas/navbar (Slate 800) */
-  --color-background-mute: #020617; /* Fondo del footer (Slate 950) */
+  color-scheme: light;
 
-  --color-border: #334155; /* Bordes sutiles (Slate 700) */
-  --color-text: #94a3b8; /* Texto secundario/grisáceo (Slate 400) */
-  --color-heading: #f8fafc; /* Texto principal/blanco (Slate 50) */
+  /* --- Superficies y fondos --- */
+  --color-background: #f4f7fb;        /* Fondo de la app (azul muy claro) */
+  --color-background-soft: #ffffff;   /* Tarjetas, navbar, paneles */
+  --color-background-mute: #eef2f8;    /* Rellenos sutiles / footer */
+  --color-surface: #ffffff;
 
-  --color-primary: #10b981; /* Verde Esmeralda para botones principales y acentos */
-  --color-primary-hover: #059669; /* Verde más oscuro para hover */
+  /* --- Bordes --- */
+  --color-border: #e6ebf3;
+  --color-border-hover: #d2dbe8;
+
+  /* --- Texto --- */
+  --color-heading: #14202e;           /* Títulos casi negro azulado */
+  --color-text: #5a6675;              /* Texto secundario */
+  --color-muted: #8a96a6;             /* Texto tenue / placeholders */
+
+  /* --- Marca (verde esmeralda) --- */
+  --color-primary: #10b981;
+  --color-primary-hover: #0e9f73;
+  --color-primary-soft: #d6f6ea;
+  --color-primary-tint: #ecfdf5;
+  --color-primary-contrast: #ffffff;
+
+  /* --- Colores semánticos --- */
+  --color-warning: #d97706;
+  --color-warning-soft: #fef3c7;
+  --color-info: #2563eb;
+  --color-info-soft: #dbeafe;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fee2e2;
+  --color-success: #059669;
+  --color-success-soft: #d1fae5;
+  --color-star: #f59e0b;
+
+  /* --- Degradados --- */
+  --grad-primary: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+  --grad-hero: linear-gradient(160deg, #ecfdf5 0%, #eff6ff 55%, #f5f3ff 100%);
+  --grad-heading: linear-gradient(120deg, #0f766e 0%, #10b981 60%, #2563eb 120%);
+
+  /* --- Sombras --- */
+  --shadow-xs: 0 1px 2px rgba(17, 24, 39, 0.05);
+  --shadow-sm: 0 1px 3px rgba(17, 24, 39, 0.07), 0 1px 2px rgba(17, 24, 39, 0.04);
+  --shadow-md: 0 6px 16px rgba(17, 24, 39, 0.08);
+  --shadow-lg: 0 16px 40px rgba(17, 24, 39, 0.12);
+  --shadow-primary: 0 10px 24px rgba(16, 185, 129, 0.28);
+
+  /* --- Radios --- */
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 26px;
+  --radius-full: 999px;
+
+  /* --- Tipografía --- */
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+
+  /* --- Transición estándar --- */
+  --t-fast: 0.15s ease;
+  --t: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Reseteo Global y Comportamiento Responsivo */
+/* Reseteo global */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  font-family:
-    "Inter",
-    system-ui,
-    -apple-system,
-    sans-serif;
+  font-family: var(--font-body);
   background-color: var(--color-background);
   color: var(--color-text);
   line-height: 1.6;
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
-/* Eliminamos las restricciones de centrado que rompen el ancho completo */
+h1, h2, h3, h4, h5 {
+  font-family: var(--font-display);
+  color: var(--color-heading);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
 #app {
   width: 100%;
   max-width: 100% !important;
@@ -42,13 +106,155 @@ body {
   display: block !important;
 }
 
-/* Estilos de enlaces generales */
 a {
   text-decoration: none;
   color: var(--color-primary);
-  transition: color 0.3s ease;
+  transition: color var(--t-fast);
 }
 
 a:hover {
   color: var(--color-primary-hover);
+}
+
+/* --- Campos de formulario (estilo base; las vistas pueden refinar) --- */
+input,
+select,
+textarea {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-heading);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 11px 13px;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-muted);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+
+/* --- Scrollbar suave --- */
+::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #c7d0dd;
+  border: 3px solid var(--color-background);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #aab6c6;
+}
+
+::selection {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+}
+
+/* ============================================================
+   Utilidades reutilizables
+   ============================================================ */
+
+/* Encabezado de página con título en degradado */
+.page-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  background: var(--grad-heading);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* Animación de entrada */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.anim-in {
+  animation: fadeUp 0.45s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* ============================================================
+   SweetAlert2 · tema claro CuidaRed
+   ============================================================ */
+.swal2-popup.cr-swal {
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-lg) !important;
+  font-family: var(--font-body) !important;
+}
+.swal2-title.cr-swal-title {
+  font-family: var(--font-display) !important;
+  color: var(--color-heading) !important;
+}
+.cr-swal .swal2-html-container {
+  color: var(--color-text) !important;
+}
+.cr-swal-confirm {
+  background: var(--grad-primary) !important;
+  border-radius: var(--radius-sm) !important;
+  box-shadow: var(--shadow-primary) !important;
+  font-weight: 600 !important;
+}
+.cr-swal-cancel {
+  background: var(--color-background-mute) !important;
+  color: var(--color-heading) !important;
+  border-radius: var(--radius-sm) !important;
+  font-weight: 600 !important;
+}
+
+/* Campos dentro de cualquier modal SweetAlert: texto legible (oscuro sobre
+   blanco) para que se vea lo que el usuario escribe o selecciona. */
+.swal2-input,
+.swal2-textarea,
+.swal2-select {
+  color: var(--color-heading) !important;
+  background-color: #fff !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-sm) !important;
+  box-shadow: none !important;
+  font-family: var(--font-body) !important;
+}
+
+.swal2-input::placeholder,
+.swal2-textarea::placeholder {
+  color: var(--color-muted) !important;
+}
+
+.swal2-input:focus,
+.swal2-textarea:focus,
+.swal2-select:focus {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 3px var(--color-primary-soft) !important;
+}
+
+.swal2-select option {
+  color: var(--color-heading);
+  background-color: #fff;
+}
+
+/* Validación de SweetAlert también en claro */
+.swal2-validation-message {
+  background: var(--color-warning-soft) !important;
+  color: var(--color-warning) !important;
 }

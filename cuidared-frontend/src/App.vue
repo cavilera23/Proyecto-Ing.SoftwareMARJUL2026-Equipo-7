@@ -16,6 +16,11 @@ const mostrarHeaderPublico = computed(
 const esCuidador = computed(() => auth.tipoUsuario === "CUIDADOR");
 const esPadre = computed(() => auth.tipoUsuario === "PADRE");
 
+// Inicial del usuario para el avatar del navbar.
+const inicialUsuario = computed(() =>
+  (auth.usuario?.nombre || "?").trim().charAt(0).toUpperCase(),
+);
+
 const cerrarSesion = () => {
   auth.cerrarSesion();
   router.push("/login");
@@ -76,7 +81,10 @@ const cerrarSesion = () => {
           <RouterLink to="/notificaciones">Notificaciones</RouterLink>
           <RouterLink to="/perfil">Perfil</RouterLink>
 
-          <span class="usuario-chip">{{ auth.usuario?.nombre }}</span>
+          <span class="usuario-chip">
+            <span class="usuario-avatar">{{ inicialUsuario }}</span>
+            <span class="usuario-nombre">{{ auth.usuario?.nombre }}</span>
+          </span>
           <button class="btn-logout" @click="cerrarSesion">Salir</button>
         </nav>
       </div>
@@ -103,7 +111,6 @@ const cerrarSesion = () => {
 </template>
 
 <style scoped>
-/* Contenedor principal en malla/flex para empujar el footer al fondo si hay poco contenido */
 .app-layout {
   display: flex;
   flex-direction: column;
@@ -111,18 +118,19 @@ const cerrarSesion = () => {
   background-color: var(--color-background);
 }
 
-/* --- NAVBAR (ANCHO COMPLETO) --- */
+/* --- NAVBAR --- */
 .navbar {
-  background-color: var(--color-background-soft);
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: saturate(180%) blur(12px);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
   border-bottom: 1px solid var(--color-border);
   width: 100%;
   position: sticky;
   top: 0;
   z-index: 1000;
-  padding: 15px 0;
+  padding: 12px 0;
 }
 
-/* Alineación interna del navbar respetando márgenes estables */
 .nav-container {
   max-width: 1200px;
   margin: 0 auto;
@@ -136,10 +144,23 @@ const cerrarSesion = () => {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 22px;
-  font-weight: 700;
+  font-size: 21px;
+  font-weight: 800;
+  font-family: var(--font-display);
   color: var(--color-heading);
-  letter-spacing: -0.5px;
+  letter-spacing: -0.03em;
+  cursor: pointer;
+}
+
+.logo-icono {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  font-size: 19px;
+  background: var(--grad-primary);
+  border-radius: 11px;
+  box-shadow: var(--shadow-primary);
 }
 
 .green-text {
@@ -148,71 +169,82 @@ const cerrarSesion = () => {
 
 .nav-links {
   display: flex;
-  gap: 15px;
+  align-items: center;
+  gap: 4px;
 }
 
 .nav-links a {
   color: var(--color-text);
   font-weight: 500;
   font-size: 14px;
-  padding: 8px 16px;
-  border-radius: 8px;
-  transition: all 0.25s ease;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  transition: color var(--t-fast), background-color var(--t-fast);
 }
 
 .nav-links a:hover {
   color: var(--color-heading);
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--color-background-mute);
 }
 
-/* Enlace activo con los colores de tu maqueta */
 .router-link-active {
-  background-color: rgba(16, 185, 129, 0.15) !important;
-  color: var(--color-primary) !important;
+  background-color: var(--color-primary-tint) !important;
+  color: var(--color-primary-hover) !important;
   font-weight: 600 !important;
 }
 
-/* El logo no debe pintarse como "enlace activo" aunque apunte al dashboard */
-.logo-area {
-  cursor: pointer;
-}
 .logo-area.router-link-active {
   background-color: transparent !important;
 }
 
-/* Nombre del usuario y botón de cerrar sesión */
+/* Chip de usuario con avatar */
 .usuario-chip {
   display: flex;
   align-items: center;
-  color: var(--color-text);
+  gap: 8px;
+  color: var(--color-heading);
   font-size: 13px;
   font-weight: 600;
-  padding: 8px 12px;
-  border-left: 1px solid var(--color-border);
-  margin-left: 6px;
+  padding: 4px 10px 4px 4px;
+  margin-left: 8px;
+  background: var(--color-background-mute);
+  border-radius: var(--radius-full);
+}
+
+.usuario-avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--grad-primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .btn-logout {
   background-color: transparent;
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  border-radius: 8px;
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger-soft);
+  border-radius: var(--radius-sm);
   padding: 8px 14px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background var(--t-fast), border-color var(--t-fast);
 }
 
 .btn-logout:hover {
-  background-color: rgba(239, 68, 68, 0.12);
+  background-color: var(--color-danger-soft);
+  border-color: var(--color-danger);
 }
 
 /* Botones del header público (landing) */
 .auth-acciones {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .btn-auth-secundario {
@@ -220,28 +252,32 @@ const cerrarSesion = () => {
   font-weight: 600;
   font-size: 14px;
   padding: 9px 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
+  transition: background var(--t-fast);
 }
 
 .btn-auth-secundario:hover {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--color-background-mute);
 }
 
 .btn-auth-primario {
-  background-color: var(--color-primary);
+  background: var(--grad-primary);
   color: white;
   font-weight: 600;
   font-size: 14px;
-  padding: 9px 18px;
-  border-radius: 8px;
-  transition: background 0.2s ease;
+  padding: 9px 20px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-primary);
+  transition: transform var(--t-fast), box-shadow var(--t-fast);
 }
 
 .btn-auth-primario:hover {
-  background-color: var(--color-primary-hover);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(16, 185, 129, 0.34);
 }
 
-/* --- MENÚ HAMBURGUESA (RESPONSIVE) --- */
+/* --- MENÚ HAMBURGUESA --- */
 .menu-toggle {
   display: none;
 }
@@ -268,19 +304,18 @@ const cerrarSesion = () => {
   padding: 40px 0;
 }
 
-/* Contenedor que limita el ancho del formulario en PC para que no se estire feo */
 .container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
 }
 
-/* --- FOOTER (ANCHO COMPLETO) --- */
+/* --- FOOTER --- */
 .footer {
-  background-color: var(--color-background-mute);
+  background-color: var(--color-background-soft);
   border-top: 1px solid var(--color-border);
   width: 100%;
-  padding: 25px 0;
+  padding: 28px 0;
   margin-top: auto;
 }
 
@@ -296,17 +331,16 @@ const cerrarSesion = () => {
 .footer-sub {
   display: block;
   margin-top: 5px;
-  opacity: 0.6;
+  opacity: 0.7;
   font-size: 12px;
 }
 
-/* --- MEDIA QUERIES (RESPONSIVIDAD TOTAL) --- */
-@media (max-width: 768px) {
+/* --- RESPONSIVE --- */
+@media (max-width: 860px) {
   .hamburger {
     display: flex;
   }
 
-  /* Menú colapsable en móvil */
   .nav-links {
     display: none;
     position: absolute;
@@ -315,10 +349,11 @@ const cerrarSesion = () => {
     width: 100%;
     background-color: var(--color-background-soft);
     flex-direction: column;
-    padding: 20px;
-    gap: 10px;
+    align-items: stretch;
+    padding: 18px;
+    gap: 6px;
     border-bottom: 1px solid var(--color-border);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-lg);
   }
 
   .nav-links a {
@@ -326,7 +361,15 @@ const cerrarSesion = () => {
     text-align: center;
   }
 
-  /* Si el checkbox está marcado, mostramos el menú en móvil */
+  .usuario-chip {
+    justify-content: center;
+    margin: 8px 0 0;
+  }
+
+  .btn-logout {
+    width: 100%;
+  }
+
   .menu-toggle:checked ~ .nav-links {
     display: flex;
   }

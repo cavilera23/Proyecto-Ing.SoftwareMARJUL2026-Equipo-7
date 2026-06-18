@@ -2,6 +2,7 @@
   <div class="landing-container">
     <section class="hero">
       <div class="hero-content">
+        <span class="eyebrow">🏡 Red de cuidado P2P · Caracas</span>
         <h1>
           Organiza el cuidado de quienes
           <span class="highlight">más importan</span>
@@ -71,84 +72,126 @@
 .landing-container {
   display: flex;
   flex-direction: column;
-  gap: 80px;
+  gap: 90px;
   padding-bottom: 60px;
 }
 
 /* HERO */
 .hero {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 40px;
-  padding: 40px 0;
+  gap: 50px;
+  padding: 60px 50px;
+  background: var(--grad-hero);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  animation: fadeUp 0.5s ease both;
 }
 
 .hero-content {
   flex: 1;
+  position: relative;
+  z-index: 1;
+}
+
+.eyebrow {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--color-border);
+  color: var(--color-primary-hover);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 7px 14px;
+  border-radius: var(--radius-full);
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-xs);
 }
 
 .hero-content h1 {
-  font-size: 3.5rem;
-  font-family: "Nunito", sans-serif;
+  font-size: 3.4rem;
+  font-family: var(--font-display);
+  font-weight: 800;
   color: var(--color-heading);
-  line-height: 1.1;
-  margin-bottom: 24px;
+  line-height: 1.08;
+  margin-bottom: 22px;
 }
 
 .highlight {
-  color: var(--color-primary);
+  background: var(--grad-heading);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .hero-content p {
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   color: var(--color-text);
-  margin-bottom: 32px;
+  margin-bottom: 34px;
   max-width: 500px;
 }
 
 .cta-group {
   display: flex;
-  gap: 16px;
+  gap: 14px;
+  flex-wrap: wrap;
 }
 
 .btn-primary {
-  background-color: var(--color-primary);
+  background: var(--grad-primary);
   color: white;
-  padding: 14px 28px;
-  border-radius: 50px;
+  padding: 15px 30px;
+  border-radius: var(--radius-full);
   font-weight: 700;
-  text-decoration: none;
-  transition: transform 0.2s ease;
+  box-shadow: var(--shadow-primary);
+  transition: transform var(--t), box-shadow var(--t);
 }
 
 .btn-secondary {
-  border: 2px solid var(--color-primary);
-  color: var(--color-primary);
-  padding: 14px 28px;
-  border-radius: 50px;
+  background: #fff;
+  border: 1.5px solid var(--color-border);
+  color: var(--color-heading);
+  padding: 15px 30px;
+  border-radius: var(--radius-full);
   font-weight: 700;
-  text-decoration: none;
+  transition: border-color var(--t), transform var(--t);
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
-  background-color: var(--color-primary-hover);
+  color: #fff;
+  transform: translateY(-3px);
+  box-shadow: 0 16px 34px rgba(16, 185, 129, 0.36);
+}
+
+.btn-secondary:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary-hover);
+  transform: translateY(-3px);
 }
 
 .hero-image {
   flex: 1;
   display: flex;
   justify-content: flex-end;
+  position: relative;
+  z-index: 1;
 }
 
 .image-blob {
-  width: 450px;
-  height: 450px;
-  background-color: var(--color-primary);
+  width: 420px;
+  height: 420px;
+  background: var(--grad-primary);
   border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
   overflow: hidden;
-  box-shadow: 20px 20px 60px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-lg);
+  animation: blobFloat 8s ease-in-out infinite;
+}
+
+@keyframes blobFloat {
+  0%, 100% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; }
+  50% { border-radius: 60% 40% 40% 60% / 60% 50% 50% 40%; }
 }
 
 .image-blob img {
@@ -160,44 +203,66 @@
 /* SERVICES */
 .services h2 {
   text-align: center;
-  font-family: "Nunito", sans-serif;
-  font-size: 2.5rem;
-  margin-bottom: 40px;
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  font-weight: 800;
+  margin-bottom: 44px;
 }
 
 .services-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 30px;
+  gap: 26px;
 }
 
 .service-card {
   background-color: var(--color-background-soft);
-  padding: 40px;
-  border-radius: 24px;
+  padding: 40px 32px;
+  border-radius: var(--radius-lg);
   text-align: center;
   border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--t), box-shadow var(--t), border-color var(--t);
+}
+
+.service-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--color-primary-soft);
 }
 
 .service-card .icon {
-  font-size: 3rem;
-  margin-bottom: 20px;
-  display: block;
+  display: inline-grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  font-size: 2.2rem;
+  margin-bottom: 22px;
+  background: var(--color-primary-tint);
+  border-radius: 20px;
 }
 
 .service-card h3 {
   color: var(--color-heading);
   margin-bottom: 12px;
+  font-size: 1.3rem;
+}
+
+.service-card p {
+  color: var(--color-text);
 }
 
 /* STATS */
 .stats {
   display: flex;
   justify-content: space-around;
-  background-color: #f3f0df; /* Crema del manual */
-  padding: 60px;
-  border-radius: 32px;
-  color: #1f2937;
+  flex-wrap: wrap;
+  gap: 30px;
+  background: var(--grad-primary);
+  padding: 56px;
+  border-radius: var(--radius-xl);
+  color: #fff;
+  box-shadow: var(--shadow-primary);
 }
 
 .stat-item {
@@ -206,27 +271,38 @@
 
 .stat-item .number {
   display: block;
+  font-family: var(--font-display);
   font-size: 3rem;
   font-weight: 800;
-  color: var(--color-primary);
+  color: #fff;
 }
 
 .stat-item .label {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.85);
 }
 
 @media (max-width: 968px) {
   .hero {
     flex-direction: column;
     text-align: center;
+    padding: 44px 26px;
+  }
+  .hero-content h1 {
+    font-size: 2.6rem;
   }
   .hero-content p {
     margin: 0 auto 32px;
   }
   .cta-group {
     justify-content: center;
+  }
+  .image-blob {
+    width: 300px;
+    height: 300px;
   }
   .services-grid {
     grid-template-columns: 1fr;

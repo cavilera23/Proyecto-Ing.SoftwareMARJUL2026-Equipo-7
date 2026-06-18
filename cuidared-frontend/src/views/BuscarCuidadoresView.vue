@@ -1,7 +1,7 @@
 <template>
   <div class="buscar-container">
     <header class="dashboard-header">
-      <h1>Buscar Cuidadores Disponibles</h1>
+      <h1 class="page-title">Buscar Cuidadores</h1>
       <p>Indica la fecha y el horario que necesitas y te mostramos quién puede atenderte sin conflictos.</p>
     </header>
 
@@ -12,11 +12,17 @@
       </div>
       <div class="campo">
         <label for="horaInicio">Hora inicio</label>
-        <input id="horaInicio" type="time" v-model="horaInicio" required />
+        <select id="horaInicio" v-model="horaInicio" required>
+          <option value="" disabled>--:--</option>
+          <option v-for="slot in bloquesHorarios" :key="'i' + slot.value" :value="slot.value">{{ slot.label }}</option>
+        </select>
       </div>
       <div class="campo">
         <label for="horaFin">Hora fin</label>
-        <input id="horaFin" type="time" v-model="horaFin" required />
+        <select id="horaFin" v-model="horaFin" required>
+          <option value="" disabled>--:--</option>
+          <option v-for="slot in bloquesHorarios" :key="'f' + slot.value" :value="slot.value">{{ slot.label }}</option>
+        </select>
       </div>
       <button type="submit" class="btn-buscar" :disabled="cargando">
         {{ cargando ? 'Buscando...' : '🔍 Buscar' }}
@@ -30,6 +36,7 @@
 
     <div v-else-if="busquedaRealizada" class="resultados">
       <div v-if="cuidadores.length === 0" class="empty-state">
+        <span class="empty-emoji">🔍</span>
         <p>No hay cuidadores disponibles para esa franja horaria. Prueba con otro horario.</p>
       </div>
 
@@ -38,14 +45,17 @@
         <div class="cards-grid">
           <div v-for="c in cuidadores" :key="c.id" class="cuidador-card">
             <div class="card-top">
-              <h3>{{ c.nombre }}</h3>
+              <div class="cuidador-id">
+                <span class="cuidador-avatar">{{ inicial(c.nombre) }}</span>
+                <h3>{{ c.nombre }}</h3>
+              </div>
               <span class="rating">⭐ {{ (c.calificacionPromedio || 0).toFixed(1) }}</span>
             </div>
-            <p class="tarifa">💲 {{ c.tarifaHora }} / hora</p>
+            <p class="tarifa">💲 {{ c.tarifaHora }} <span>/ hora</span></p>
             <div class="habilidades" v-if="c.habilidades && c.habilidades.length">
               <span v-for="h in c.habilidades" :key="h" class="chip">{{ formatHabilidad(h) }}</span>
             </div>
-            <p class="contacto">📧 {{ c.correo }} · 📞 {{ c.telefono }}</p>
+            <p class="contacto">📧 {{ c.correo }}<br />📞 {{ c.telefono }}</p>
           </div>
         </div>
       </div>
@@ -54,7 +64,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import Swal from 'sweetalert2'
 import { buscarCuidadoresApi } from '../services/agendaService'
 
@@ -68,15 +78,26 @@ const cuidadores = ref([])
 const cargando = ref(false)
 const busquedaRealizada = ref(false)
 
+// Bloques de 30 minutos de 06:00 a 22:00.
+const bloquesHorarios = computed(() => {
+  const slots = []
+  for (let h = 6; h <= 22; h++) {
+    for (const m of [0, 30]) {
+      const hh = String(h).padStart(2, '0')
+      const mm = String(m).padStart(2, '0')
+      const ampm = h < 12 ? 'a.m.' : 'p.m.'
+      const h12 = h % 12 === 0 ? 12 : h % 12
+      slots.push({ value: `${hh}:${mm}`, label: `${String(h12).padStart(2, '0')}:${mm} ${ampm}` })
+    }
+  }
+  return slots
+})
+
+const swalBase = { background: '#ffffff', color: '#5a6675', customClass: { popup: 'cr-swal', title: 'cr-swal-title', confirmButton: 'cr-swal-confirm' } }
+
 const buscar = async () => {
   if (horaInicio.value >= horaFin.value) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'Horario inválido',
-      text: 'La hora de inicio debe ser anterior a la hora de fin.',
-      background: '#1f2937',
-      color: '#fff'
-    })
+    Swal.fire({ ...swalBase, icon: 'warning', title: 'Horario inválido', text: 'La hora de inicio debe ser anterior a la hora de fin.' })
     return
   }
 
@@ -92,28 +113,22 @@ const buscar = async () => {
     busquedaRealizada.value = true
   } catch (error) {
     console.error('Error al buscar cuidadores:', error)
-    Swal.fire({
-      icon: 'error',
-      title: 'Oops...',
-      text: 'No se pudo realizar la búsqueda. ' + error.message,
-      background: '#1f2937',
-      color: '#fff'
-    })
+    Swal.fire({ ...swalBase, icon: 'error', title: 'Oops...', text: 'No se pudo realizar la búsqueda. ' + error.message })
   } finally {
     cargando.value = false
   }
 }
 
 const formatHabilidad = (h) => (h ? h.replace(/_/g, ' ') : h)
+const inicial = (nombre) => (nombre || '?').trim().charAt(0).toUpperCase()
 </script>
 
 <style scoped>
 .buscar-container {
   max-width: 1000px;
   margin: 0 auto;
-  padding: 2rem;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  color: #fff;
+  padding: 1rem 0;
+  color: var(--color-text);
 }
 
 .dashboard-header {
@@ -122,17 +137,14 @@ const formatHabilidad = (h) => (h ? h.replace(/_/g, ' ') : h)
 }
 
 .dashboard-header h1 {
-  font-size: 2.5rem;
+  font-size: 2.4rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #60a5fa, #a78bfa);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   margin-bottom: 0.5rem;
 }
 
 .dashboard-header p {
-  color: #9ca3af;
-  font-size: 1.1rem;
+  color: var(--color-text);
+  font-size: 1.05rem;
 }
 
 .busqueda-form {
@@ -140,133 +152,178 @@ const formatHabilidad = (h) => (h ? h.replace(/_/g, ' ') : h)
   flex-wrap: wrap;
   align-items: flex-end;
   gap: 1rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
+  background: var(--color-background-soft);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   padding: 1.5rem;
   margin-bottom: 2rem;
+  box-shadow: var(--shadow-sm);
 }
 
 .campo {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.45rem;
   flex: 1;
-  min-width: 140px;
+  min-width: 150px;
 }
 
 .campo label {
-  font-size: 0.85rem;
-  color: #9ca3af;
+  font-size: 0.8rem;
+  color: var(--color-heading);
   font-weight: 600;
 }
 
-.campo input {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
-  padding: 0.6rem 0.8rem;
-  color: #fff;
-  font-size: 0.95rem;
-  color-scheme: dark;
+.campo input,
+.campo select {
+  width: 100%;
 }
 
 .btn-buscar {
-  background: linear-gradient(135deg, #60a5fa, #a78bfa);
+  background: var(--grad-primary);
   color: #fff;
   border: none;
-  border-radius: 8px;
-  padding: 0.7rem 1.5rem;
+  border-radius: var(--radius-sm);
+  padding: 12px 24px;
   font-weight: 700;
   cursor: pointer;
-  transition: opacity 0.2s;
+  box-shadow: var(--shadow-primary);
+  transition: transform var(--t-fast), box-shadow var(--t-fast);
   height: fit-content;
+}
+
+.btn-buscar:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(16, 185, 129, 0.32);
 }
 
 .btn-buscar:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .resultados-titulo {
   font-size: 1.3rem;
-  margin-bottom: 1rem;
-  color: #e0e0e0;
+  margin-bottom: 1.2rem;
+  color: var(--color-heading);
 }
 
 .cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
+  gap: 1.4rem;
 }
 
 .cuidador-card {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  padding: 1.25rem;
-  transition: transform 0.2s ease;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.4rem;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--t), box-shadow var(--t), border-color var(--t);
 }
 
 .cuidador-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--color-primary-soft);
 }
 
 .card-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.cuidador-id {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cuidador-avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--grad-primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
 }
 
 .card-top h3 {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
+  color: var(--color-heading);
 }
 
 .rating {
-  color: #fbbf24;
-  font-weight: 600;
+  color: var(--color-star);
+  font-weight: 700;
   font-size: 0.95rem;
+  background: var(--color-warning-soft);
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
 }
 
 .tarifa {
-  color: #34d399;
-  font-weight: 600;
-  margin: 0.25rem 0 0.75rem;
+  color: var(--color-primary-hover);
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin: 0.25rem 0 0.85rem;
+}
+
+.tarifa span {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-muted);
 }
 
 .habilidades {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.85rem;
 }
 
 .chip {
-  background: rgba(96, 165, 250, 0.15);
-  color: #60a5fa;
-  border: 1px solid rgba(96, 165, 250, 0.4);
-  border-radius: 20px;
-  padding: 2px 10px;
+  background: var(--color-primary-tint);
+  color: var(--color-primary-hover);
+  border: 1px solid var(--color-primary-soft);
+  border-radius: var(--radius-full);
+  padding: 3px 12px;
   font-size: 0.75rem;
+  font-weight: 600;
   text-transform: capitalize;
 }
 
 .contacto {
-  color: #9ca3af;
+  color: var(--color-text);
   font-size: 0.85rem;
   margin: 0;
+  line-height: 1.7;
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.75rem;
 }
 
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 16px;
-  border: 1px dashed rgba(255, 255, 255, 0.1);
-  color: #9ca3af;
-  font-size: 1.1rem;
+  background: var(--color-background-mute);
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--color-border-hover);
+  color: var(--color-text);
+  font-size: 1.05rem;
+}
+
+.empty-emoji {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 1rem;
 }
 
 .loading-state {
@@ -275,14 +332,14 @@ const formatHabilidad = (h) => (h ? h.replace(/_/g, ' ') : h)
   align-items: center;
   justify-content: center;
   height: 250px;
-  color: #9ca3af;
+  color: var(--color-text);
 }
 
 .spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid rgba(255, 255, 255, 0.1);
-  border-left-color: #60a5fa;
+  border: 4px solid var(--color-border);
+  border-left-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 1rem;
