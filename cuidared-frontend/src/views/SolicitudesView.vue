@@ -67,14 +67,54 @@
           </div>
           <ul v-else class="solicitudes-lista">
             <li v-for="sol in solicitudesActivas" :key="sol.id" class="solicitud-item">
-              <div class="solicitud-header">
-                <span class="tipo">{{ formatearTipo(sol.tipo) }}</span>
-                <span :class="['estado', getEstadoClass(sol.estado)]">{{ sol.estado }}</span>
-              </div>
-              <div class="solicitud-detalle">
-                <span>📅 {{ formatearFecha(sol.fecha) }} {{ formatearHora(sol.horaInicio) }} ({{ sol.duracionHoras }}h)</span>
-                <p v-if="sol.descripcion" class="descripcion">{{ sol.descripcion }}</p>
-              </div>
+              <template v-if="editandoId === sol.id">
+                <div class="campo">
+                  <label>Tipo de cuidador:</label>
+                  <select v-model="formEdicion.tipo">
+                    <option value="NINO">Niños</option>
+                    <option value="ADULTO_MAYOR">Adultos mayores</option>
+                    <option value="MASCOTA">Mascotas</option>
+                  </select>
+                </div>
+                <div class="campo">
+                  <label>Fecha:</label>
+                  <input type="date" v-model="formEdicion.fecha" :min="fechaMinima" />
+                </div>
+                <div class="campo">
+                  <label>Hora de inicio:</label>
+                  <select v-model="formEdicion.horaInicio">
+                    <option v-for="slot in bloquesHorarios" :key="slot.value" :value="slot.value">
+                      {{ slot.label }}
+                    </option>
+                  </select>
+                </div>
+                <div class="campo">
+                  <label>Duración (horas):</label>
+                  <input type="number" v-model.number="formEdicion.duracionHoras" min="1" max="12" step="0.5" />
+                </div>
+                <div class="campo">
+                  <label>Descripción (opcional):</label>
+                  <textarea v-model="formEdicion.descripcion" rows="2"></textarea>
+                </div>
+                <div class="edicion-acciones">
+                  <button class="btn-guardar" @click="guardarEdicion(sol)">Guardar cambios</button>
+                  <button class="btn-cancelar-edicion" @click="cancelarEdicion">Cancelar</button>
+                </div>
+              </template>
+              <template v-else>
+                <div class="solicitud-header">
+                  <span class="tipo">{{ formatearTipo(sol.tipo) }}</span>
+                  <span :class="['estado', getEstadoClass(sol.estado)]">{{ sol.estado }}</span>
+                </div>
+                <div class="solicitud-detalle">
+                  <span>📅 {{ formatearFecha(sol.fecha) }} {{ formatearHora(sol.horaInicio) }} ({{ sol.duracionHoras }}h)</span>
+                  <p v-if="sol.descripcion" class="descripcion">{{ sol.descripcion }}</p>
+                </div>
+                <div class="solicitud-acciones" v-if="sol.estado === 'PENDIENTE' || sol.estado === 'ACEPTADA'">
+                  <button v-if="sol.estado === 'PENDIENTE'" class="btn-editar" @click="iniciarEdicion(sol)">Editar</button>
+                  <button class="btn-cancelar-solicitud" @click="cancelarSolicitud(sol)">Cancelar</button>
+                </div>
+              </template>
             </li>
           </ul>
         </div>
@@ -153,11 +193,13 @@ import { ref, computed, onMounted } from 'vue'
 import {
   listarSolicitudesApi,
   crearSolicitudApi,
+  modificarSolicitudApi,
+  cancelarSolicitudApi,
   listarSolicitudesDisponiblesApi,
   listarMisSolicitudesCuidadorApi,
   aceptarSolicitudApi
 } from '../services/solicitudService'
-import { showSuccessAlert, showErrorAlert, showWarningAlert } from '@/components/modals/alerts'
+import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirmAlert } from '@/components/modals/alerts'
 import { auth } from '@/stores/auth'
 
 const esCuidador = computed(() => auth.tipoUsuario === 'CUIDADOR')
@@ -176,6 +218,15 @@ const form = ref({
   descripcion: ''
 })
 const solicitudes = ref([])
+const editandoId = ref(null)
+const formEdicion = ref({
+  tipo: '',
+  fecha: '',
+  horaInicio: '',
+  duracionHoras: 1,
+  descripcion: ''
+})
+const fechaOriginalEdicion = ref('')
 
 // --- Estado CUIDADOR ---
 const solicitudesDisponibles = ref([])
@@ -296,6 +347,101 @@ const publicarSolicitud = async () => {
     flash(`❌ ${errorMsg}`, "error")
   } finally {
     cargando.value = false
+  }
+}
+
+const toFechaInput = (fecha) => {
+  if (!fecha) return ''
+  if (Array.isArray(fecha)) {
+    const [y, mo, d] = fecha
+    return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+  }
+  return fecha.substring(0, 10)
+}
+
+const toHoraInput = (hora) => {
+  if (!hora) return ''
+  if (Array.isArray(hora)) {
+    const [h, m = 0] = hora
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  }
+  return typeof hora === 'string' ? hora.substring(0, 5) : ''
+}
+
+const iniciarEdicion = (sol) => {
+  editandoId.value = sol.id
+  formEdicion.value = {
+    tipo: sol.tipo,
+    fecha: toFechaInput(sol.fecha),
+    horaInicio: toHoraInput(sol.horaInicio),
+    duracionHoras: sol.duracionHoras,
+    descripcion: sol.descripcion || ''
+  }
+  fechaOriginalEdicion.value = formEdicion.value.fecha
+}
+
+const cancelarEdicion = () => {
+  editandoId.value = null
+}
+
+const guardarEdicion = async (sol) => {
+  if (!formEdicion.value.tipo || !formEdicion.value.fecha || !formEdicion.value.horaInicio) {
+    return showWarningAlert("Campos incompletos", "Completa todos los campos requeridos")
+  }
+  if (formEdicion.value.duracionHoras < 1 || formEdicion.value.duracionHoras > 12) {
+    return showWarningAlert("Duración inválida", "La duración debe ser entre 1 y 12 horas")
+  }
+
+  const horaInicio = formEdicion.value.horaInicio
+  const [h, m] = horaInicio.split(':').map(Number)
+  const minutosTotales = h * 60 + m + (formEdicion.value.duracionHoras * 60)
+  const horaFin = `${String(Math.floor(minutosTotales / 60)).padStart(2, '0')}:${String(minutosTotales % 60).padStart(2, '0')}`
+
+  const payload = {
+    tipo: formEdicion.value.tipo,
+    descripcion: formEdicion.value.descripcion,
+    horaInicio,
+    duracionHoras: formEdicion.value.duracionHoras,
+    horario: {
+      fechaInicio: `${formEdicion.value.fecha}T${horaInicio}:00`,
+      fechaFin: `${formEdicion.value.fecha}T${horaFin}:00`
+    }
+  }
+  // Solo mandamos la fecha si el usuario la cambió: el backend valida que no sea
+  // anterior a hoy, y no queremos que eso rompa la edición de una solicitud vieja
+  // cuando lo único que se está tocando es otro campo.
+  if (formEdicion.value.fecha !== fechaOriginalEdicion.value) {
+    payload.fecha = formEdicion.value.fecha
+  }
+
+  try {
+    await modificarSolicitudApi(sol.id, payload)
+    await showSuccessAlert("Solicitud actualizada", "Los cambios se guardaron correctamente")
+    editandoId.value = null
+    await cargarSolicitudes()
+    flash("✅ Solicitud actualizada", "exito")
+  } catch (error) {
+    console.error("Error al modificar:", error)
+    const errorMsg = extraerError(error.message) || "No se pudo actualizar la solicitud"
+    await showErrorAlert("No se pudo actualizar", errorMsg)
+    flash(`❌ ${errorMsg}`, "error")
+  }
+}
+
+const cancelarSolicitud = async (sol) => {
+  const confirmacion = await showConfirmAlert("¿Cancelar solicitud?", "Esta acción no se puede deshacer.")
+  if (!confirmacion.isConfirmed) return
+
+  try {
+    await cancelarSolicitudApi(sol.id)
+    await showSuccessAlert("Solicitud cancelada", "Tu solicitud fue cancelada correctamente")
+    await cargarSolicitudes()
+    flash("✅ Solicitud cancelada", "exito")
+  } catch (error) {
+    console.error("Error al cancelar:", error)
+    const errorMsg = extraerError(error.message) || "No se pudo cancelar la solicitud"
+    await showErrorAlert("No se pudo cancelar", errorMsg)
+    flash(`❌ ${errorMsg}`, "error")
   }
 }
 
@@ -547,6 +693,49 @@ button:disabled {
 
 .btn-aceptar:hover:not(:disabled) {
   background-color: #059669;
+}
+
+.solicitud-acciones, .edicion-acciones {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.btn-editar, .btn-guardar, .btn-cancelar-solicitud, .btn-cancelar-edicion {
+  width: auto;
+  flex: 1;
+  padding: 9px;
+  font-size: 13px;
+}
+
+.btn-editar, .btn-guardar {
+  background-color: #10b981;
+}
+
+.btn-editar:hover, .btn-guardar:hover {
+  background-color: #059669;
+}
+
+.btn-cancelar-solicitud {
+  background: none;
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  box-shadow: none;
+}
+
+.btn-cancelar-solicitud:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.btn-cancelar-edicion {
+  background: none;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  box-shadow: none;
+}
+
+.btn-cancelar-edicion:hover {
+  background-color: var(--color-background-mute);
 }
 
 .toast {

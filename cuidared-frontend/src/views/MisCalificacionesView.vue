@@ -112,6 +112,7 @@ import { ref, computed, onMounted } from 'vue'
 import Swal from 'sweetalert2'
 import { apiFetch } from '../services/api'
 import { crearCalificacionApi, listarCalificacionesPorCuidadorApi } from '../services/calificacionService'
+import { cancelarSolicitudApi } from '../services/solicitudService'
 import { auth } from '@/stores/auth'
 import SolicitudCard from '../components/SolicitudCard.vue'
 
@@ -209,19 +210,27 @@ const handleCancelar = (id) => {
     cancelButtonText: 'No, mantener',
     background: '#ffffff',
     color: '#5a6675'
-  }).then((result) => {
+  }).then(async (result) => {
     if (result.isConfirmed) {
-      // Aquí iría la llamada al backend para cancelar:
-      // apiFetch(`/intercambio/solicitudes/${id}/cancelar`, { method: 'POST' })
-      Swal.fire({
-        title: 'Cancelada',
-        text: 'La cita ha sido cancelada exitosamente.',
-        icon: 'success',
-        background: '#ffffff',
-        color: '#5a6675'
-      })
-      // Simular actualización
-      solicitudesFuturas.value = solicitudesFuturas.value.filter(s => s.id !== id)
+      try {
+        await cancelarSolicitudApi(id)
+        await Swal.fire({
+          title: 'Cancelada',
+          text: 'La cita ha sido cancelada exitosamente.',
+          icon: 'success',
+          background: '#ffffff',
+          color: '#5a6675'
+        })
+        cargarSolicitudes()
+      } catch (error) {
+        Swal.fire({
+          icon: 'error',
+          title: 'No se pudo cancelar',
+          text: error.message,
+          background: '#ffffff',
+          color: '#5a6675'
+        })
+      }
     }
   })
 }
