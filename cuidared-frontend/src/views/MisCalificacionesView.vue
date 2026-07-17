@@ -99,6 +99,7 @@
               :solicitud="solicitud"
               :esHistorial="true"
               @calificar="handleCalificar"
+              @editar-calificacion="handleEditarCalificacion"
             />
           </div>
         </div>
@@ -111,7 +112,7 @@
 import { ref, computed, onMounted } from 'vue'
 import Swal from 'sweetalert2'
 import { apiFetch } from '../services/api'
-import { crearCalificacionApi, listarCalificacionesPorCuidadorApi } from '../services/calificacionService'
+import { crearCalificacionApi, listarCalificacionesPorCuidadorApi, modificarCalificacionApi } from '../services/calificacionService'
 import { cancelarSolicitudApi } from '../services/solicitudService'
 import { auth } from '@/stores/auth'
 import SolicitudCard from '../components/SolicitudCard.vue'
@@ -287,6 +288,67 @@ const handleCalificar = (id) => {
         Swal.fire({
           icon: 'error',
           title: 'No se pudo calificar',
+          text: error.message,
+          background: '#ffffff',
+          color: '#5a6675'
+        })
+      }
+    }
+  })
+}
+
+const handleEditarCalificacion = (solicitud) => {
+  const cal = solicitud.calificacion
+  if (!cal) return
+
+  Swal.fire({
+    title: 'Editar Calificación',
+    html: `
+      <select id="swal-puntuacion" class="swal2-select" style="display:block;margin:0 auto 1rem;width:80%">
+        <option value="5" ${cal.puntuacion === 5 ? 'selected' : ''}>⭐⭐⭐⭐⭐ - Excelente</option>
+        <option value="4" ${cal.puntuacion === 4 ? 'selected' : ''}>⭐⭐⭐⭐ - Muy Bueno</option>
+        <option value="3" ${cal.puntuacion === 3 ? 'selected' : ''}>⭐⭐⭐ - Bueno</option>
+        <option value="2" ${cal.puntuacion === 2 ? 'selected' : ''}>⭐⭐ - Regular</option>
+        <option value="1" ${cal.puntuacion === 1 ? 'selected' : ''}>⭐ - Malo</option>
+      </select>
+      <textarea id="swal-comentario" class="swal2-textarea" placeholder="Comentario (opcional)" style="width:80%">${cal.comentario || ''}</textarea>
+    `,
+    showCancelButton: true,
+    confirmButtonText: 'Guardar Cambios',
+    cancelButtonText: 'Cancelar',
+    background: '#ffffff',
+    color: '#5a6675',
+    customClass: { popup: 'cr-swal', title: 'cr-swal-title', confirmButton: 'cr-swal-confirm', cancelButton: 'cr-swal-cancel' },
+    preConfirm: () => {
+      const puntuacion = document.getElementById('swal-puntuacion').value
+      if (!puntuacion) {
+        Swal.showValidationMessage('Debes seleccionar una calificación')
+        return false
+      }
+      return {
+        puntuacion: parseInt(puntuacion, 10),
+        comentario: document.getElementById('swal-comentario').value
+      }
+    }
+  }).then(async (result) => {
+    if (result.isConfirmed && result.value) {
+      try {
+        await modificarCalificacionApi(cal.id, {
+          puntuacion: result.value.puntuacion,
+          comentario: result.value.comentario
+        })
+        await Swal.fire({
+          title: '¡Actualizada!',
+          text: `Tu calificación ha sido actualizada a ${result.value.puntuacion} estrellas.`,
+          icon: 'success',
+          background: '#ffffff',
+          color: '#5a6675'
+        })
+        cargarSolicitudes()
+      } catch (error) {
+        Swal.fire({
+          icon: 'error',
+          title: 'No se pudo actualizar',
           text: error.message,
           background: '#ffffff',
           color: '#5a6675'

@@ -18,6 +18,7 @@
         <div v-else-if="yaCalificada" class="ya-calificado">
           <span class="ya-calificado-estrellas">{{ estrellas(solicitud.calificacion.puntuacion) }}</span>
           <span class="ya-calificado-texto">Ya calificaste este servicio</span>
+          <button class="btn-editar-calificacion" @click="$emit('editar-calificacion', solicitud)">✏️ Editar</button>
         </div>
       </template>
     </div>
@@ -42,7 +43,7 @@ const props = defineProps({
   }
 })
 
-defineEmits(['cancelar', 'calificar'])
+defineEmits(['cancelar', 'calificar', 'editar-calificacion'])
 
 const esFinalizada = computed(
   () => (props.solicitud.estado || '').toUpperCase() === 'FINALIZADA'
@@ -223,5 +224,23 @@ button {
   background: var(--color-success-soft);
   padding: 4px 12px;
   border-radius: var(--radius-full);
+}
+
+.btn-editar-calificacion {
+  background: var(--color-info-soft, #e0f2fe);
+  color: var(--color-info, #0284c7);
+  padding: 5px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color var(--t-fast), transform var(--t-fast), border-color var(--t-fast);
+}
+
+.btn-editar-calificacion:hover {
+  background: var(--color-info, #0284c7);
+  color: #fff;
+  transform: translateY(-1px);
 }
 </style>
