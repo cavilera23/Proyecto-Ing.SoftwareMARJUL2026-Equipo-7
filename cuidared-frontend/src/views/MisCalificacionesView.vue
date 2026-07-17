@@ -100,6 +100,7 @@
               :esHistorial="true"
               @calificar="handleCalificar"
               @editar-calificacion="handleEditarCalificacion"
+              @eliminar-calificacion="handleEliminarCalificacion"
             />
           </div>
         </div>
@@ -112,7 +113,7 @@
 import { ref, computed, onMounted } from 'vue'
 import Swal from 'sweetalert2'
 import { apiFetch } from '../services/api'
-import { crearCalificacionApi, listarCalificacionesPorCuidadorApi, modificarCalificacionApi } from '../services/calificacionService'
+import { crearCalificacionApi, listarCalificacionesPorCuidadorApi, modificarCalificacionApi, eliminarCalificacionApi } from '../services/calificacionService'
 import { cancelarSolicitudApi } from '../services/solicitudService'
 import { auth } from '@/stores/auth'
 import SolicitudCard from '../components/SolicitudCard.vue'
@@ -349,6 +350,43 @@ const handleEditarCalificacion = (solicitud) => {
         Swal.fire({
           icon: 'error',
           title: 'No se pudo actualizar',
+          text: error.message,
+          background: '#ffffff',
+          color: '#5a6675'
+        })
+      }
+    }
+  })
+}
+
+const handleEliminarCalificacion = (id) => {
+  Swal.fire({
+    title: '¿Eliminar Calificación?',
+    text: "Esta acción no se puede deshacer y tu comentario será retirado.",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#ef4444',
+    cancelButtonColor: '#4b5563',
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar',
+    background: '#ffffff',
+    color: '#5a6675'
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      try {
+        await eliminarCalificacionApi(id)
+        await Swal.fire({
+          title: 'Eliminada',
+          text: 'Tu calificación ha sido eliminada exitosamente.',
+          icon: 'success',
+          background: '#ffffff',
+          color: '#5a6675'
+        })
+        cargarSolicitudes()
+      } catch (error) {
+        Swal.fire({
+          icon: 'error',
+          title: 'No se pudo eliminar',
           text: error.message,
           background: '#ffffff',
           color: '#5a6675'

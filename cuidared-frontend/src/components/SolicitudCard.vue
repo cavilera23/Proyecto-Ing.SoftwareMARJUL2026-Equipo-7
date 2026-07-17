@@ -19,6 +19,7 @@
           <span class="ya-calificado-estrellas">{{ estrellas(solicitud.calificacion.puntuacion) }}</span>
           <span class="ya-calificado-texto">Ya calificaste este servicio</span>
           <button class="btn-editar-calificacion" @click="$emit('editar-calificacion', solicitud)">✏️ Editar</button>
+          <button class="btn-eliminar-calificacion" @click="$emit('eliminar-calificacion', solicitud.calificacion.id)">🗑️ Eliminar</button>
         </div>
       </template>
     </div>
@@ -43,7 +44,7 @@ const props = defineProps({
   }
 })
 
-defineEmits(['cancelar', 'calificar', 'editar-calificacion'])
+defineEmits(['cancelar', 'calificar', 'editar-calificacion', 'eliminar-calificacion'])
 
 const esFinalizada = computed(
   () => (props.solicitud.estado || '').toUpperCase() === 'FINALIZADA'
@@ -240,6 +241,24 @@ button {
 
 .btn-editar-calificacion:hover {
   background: var(--color-info, #0284c7);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.btn-eliminar-calificacion {
+  background: var(--color-danger-soft, #fee2e2);
+  color: var(--color-danger, #ef4444);
+  padding: 5px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color var(--t-fast), transform var(--t-fast), border-color var(--t-fast);
+}
+
+.btn-eliminar-calificacion:hover {
+  background: var(--color-danger, #ef4444);
   color: #fff;
   transform: translateY(-1px);
 }
